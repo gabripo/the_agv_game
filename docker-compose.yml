@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  ekf-tuner:
+    build: .
+    container_name: ekf-tuner
+    ports:
+      - "8080:80"
+    restart: unless-stopped

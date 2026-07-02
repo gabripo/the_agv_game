@@ -1,0 +1,10 @@
+node_modules/
+npm-debug.log*
+.env
+.DS_Store
+*.swp
+*.swo
+dist/
+.build/
+screenshots/
+test-results/

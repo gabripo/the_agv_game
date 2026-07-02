@@ -1,0 +1,34 @@
+{
+  "name": "ekf-tuner",
+  "version": "1.0.0",
+  "description": "The EKF Tuner — Navigating Uncertainty. An interactive portfolio piece demonstrating Extended Kalman Filter sensor fusion for AGV state estimation.",
+  "keywords": [
+    "ekf",
+    "extended-kalman-filter",
+    "sensor-fusion",
+    "slam",
+    "robotics",
+    "portfolio"
+  ],
+  "author": "",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "mocha --require tests/setup.js tests/**/*.js",
+    "test:watch": "mocha --require tests/setup.js --watch tests/**/*.js",
+    "test:ekf": "mocha --require tests/setup.js tests/test_ekf.js",
+    "test:functions": "mocha --require tests/setup.js tests/test_functions.js",
+    "start": "npx http-server . -p 8080 -c-1 -o",
+    "test:headless": "node tests/headless_test.js",
+    "test:all": "npm test && npm run test:headless",
+    "docker:build": "docker build -t ekf-tuner .",
+    "docker:run": "docker run -d -p 8080:80 ekf-tuner"
+  },
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "http-server": "^14.1.1",
+    "mathjs": "^12.2.1",
+    "mocha": "^10.2.0",
+    "playwright": "^1.61.1"
+  }
+}
