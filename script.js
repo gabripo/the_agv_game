@@ -472,7 +472,13 @@ function draw() {
   currentUncertainty = ekf.getPositionUncertainty();
   currentSavings = calculateSavings();
 
-  // Collision check
+  // Divergence check (primary failure mode for high-R / low-Q tunings)
+  if (checkDivergence()) {
+    gameOver();
+    return;
+  }
+
+  // Collision check (secondary visual signal)
   if (checkCollision()) {
     gameOver();
     return;
@@ -816,6 +822,11 @@ function checkCollision() {
     }
   }
   return false;
+}
+
+function checkDivergence() {
+  if (simTime <= slipEndTime + 8) return false;
+  return currentDivergence > 60;
 }
 
 function gameOver() {
