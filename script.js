@@ -222,6 +222,7 @@ let slipDuration = CORRIDOR_T_END - CORRIDOR_T_START;
 let slipStartTime = CORRIDOR_T_START;
 let slipEndTime = CORRIDOR_T_END;
 
+let agvSpeed = 2.0;
 let startPoint = { x: 150, y: 440 };
 let endPoint = { x: 700, y: 160 };
 let userCorridorStart = CORRIDOR_T_START;
@@ -251,7 +252,7 @@ function buildTrajectory() {
   for (let i = 0; i <= TOTAL_TIME; i++) {
     const t = i / TOTAL_TIME;
     const pt = cubicBezier(p0, p1, p2, p3, t);
-    trajectory.push({ x: pt.x, y: pt.y, theta: 0, v: 2.0 });
+    trajectory.push({ x: pt.x, y: pt.y, theta: 0, v: agvSpeed });
   }
 
   for (let i = 0; i < trajectory.length; i++) {
@@ -711,7 +712,7 @@ function draw() {
   if (ekfHistory.length > MAX_HISTORY) ekfHistory.shift();
   if (trueHistory.length > MAX_HISTORY) trueHistory.shift();
 
-  simTime += DT;
+  simTime += DT * (agvSpeed / 2.0);
 
   // --- RENDER ---
   drawRacks();
@@ -1346,6 +1347,8 @@ function resetSimulation() {
 // ============================================================
 if (typeof document !== 'undefined') {
 document.addEventListener('DOMContentLoaded', function () {
+  const speedEl = document.getElementById('agvSpeed');
+  if (speedEl) agvSpeed = parseFloat(speedEl.value);
   function setupSensorListener(name) {
     const accId = name + 'Accuracy';
     const valId = name + 'Value';
@@ -1373,6 +1376,14 @@ document.addEventListener('DOMContentLoaded', function () {
   setupSensorListener('wheelOdometry');
   setupSensorListener('lidar');
   setupSensorListener('gps');
+
+  document.getElementById('agvSpeed').addEventListener('input', function () {
+    agvSpeed = parseFloat(this.value);
+    document.getElementById('speedValue').textContent = agvSpeed.toFixed(1);
+    if (!running) {
+      buildTrajectory();
+    }
+  });
 
   document.getElementById('btnAddBeacon').addEventListener('click', function () {
     if (running || completed || crashed) return;

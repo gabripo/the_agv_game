@@ -719,6 +719,15 @@
           <!-- START BUTTON -->
           <button class="btn-start ready" id="btnStart" onclick="startSimulation()">▶ DEPLOY AGV</button>
 
+          <div class="slider-group" style="margin: 12px 0 4px;">
+            <label>
+              <span>AGV Speed</span>
+              <span class="value" id="speedValue">2.0</span>
+            </label>
+            <input type="range" id="agvSpeed" min="0.5" max="5.0" step="0.1" value="2.0">
+            <div class="slider-hint">Faster speed increases the distance traveled per timestep, making the corridor harder to navigate.</div>
+          </div>
+
           <details class="accordion-section" id="accSensors" open>
             <summary>Sensors Configuration</summary>
             <div class="accordion-content" style="padding: 12px 16px;">
