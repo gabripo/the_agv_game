@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,11 +13,18 @@
   <!-- CDN: KaTeX (CSS + JS) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    crossorigin="anonymous"></script>
 
   <style>
     /* ===== RESET & BASE ===== */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --primary: #1a2634;
@@ -28,11 +36,12 @@
       --text: #ecf0f1;
       --text-secondary: #95a5a6;
       --card-radius: 12px;
-      --shadow: 0 4px 6px rgba(0,0,0,0.3);
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       --transition: 0.3s ease;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
       background: var(--primary);
@@ -57,8 +66,9 @@
       text-align: center;
       margin-bottom: 24px;
       padding: 16px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
+
     header h1 {
       font-size: 1.6rem;
       font-weight: 600;
@@ -67,6 +77,7 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+
     header p {
       font-size: 0.85rem;
       color: var(--text-secondary);
@@ -96,7 +107,7 @@
       color: var(--text-secondary);
       margin-bottom: 16px;
       padding-bottom: 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     /* ===== CANVAS ===== */
@@ -105,6 +116,7 @@
       overflow: hidden;
       border-radius: var(--card-radius);
     }
+
     .canvas-wrapper canvas {
       display: block;
       width: 100% !important;
@@ -120,10 +132,17 @@
       flex-direction: column;
       gap: 16px;
     }
-    .dashboard-scroll::-webkit-scrollbar { width: 6px; }
-    .dashboard-scroll::-webkit-scrollbar-track { background: transparent; }
+
+    .dashboard-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .dashboard-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
     .dashboard-scroll::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.15);
+      background: rgba(255, 255, 255, 0.15);
       border-radius: 3px;
     }
 
@@ -131,6 +150,7 @@
     .slider-group {
       margin-bottom: 4px;
     }
+
     .slider-group label {
       display: flex;
       justify-content: space-between;
@@ -139,17 +159,20 @@
       font-weight: 500;
       margin-bottom: 6px;
     }
+
     .slider-group label .value {
       font-family: 'SF Mono', 'Fira Code', monospace;
       font-size: 0.8rem;
       color: var(--accent);
     }
+
     .slider-hint {
       font-size: 0.75rem;
       color: var(--text-secondary);
       margin-bottom: 8px;
       line-height: 1.4;
     }
+
     input[type="range"] {
       -webkit-appearance: none;
       appearance: none;
@@ -160,6 +183,7 @@
       outline: none;
       transition: opacity var(--transition);
     }
+
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -168,12 +192,14 @@
       border-radius: 50%;
       background: var(--text);
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
       transition: transform 0.15s ease;
     }
+
     input[type="range"]::-webkit-slider-thumb:hover {
       transform: scale(1.15);
     }
+
     input[type="range"]::-moz-range-thumb {
       width: 18px;
       height: 18px;
@@ -187,6 +213,7 @@
     .coord-group {
       margin-bottom: 10px;
     }
+
     .coord-label {
       display: flex;
       justify-content: space-between;
@@ -194,34 +221,40 @@
       font-size: 0.85rem;
       font-weight: 500;
     }
+
     .coord-inputs {
       display: flex;
       align-items: center;
       gap: 4px;
     }
+
     .coord-inputs .coord-prefix {
       font-size: 0.75rem;
       color: var(--text-secondary);
     }
+
     input[type="number"] {
       width: 58px;
       padding: 4px 6px;
       border-radius: 4px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text);
       font-family: 'SF Mono', 'Fira Code', monospace;
       font-size: 0.8rem;
       outline: none;
       transition: border-color var(--transition);
     }
+
     input[type="number"]:focus {
       border-color: var(--accent);
     }
+
     .corridor-params {
       margin-top: 12px;
       display: none;
     }
+
     .corridor-params.show {
       display: block;
     }
@@ -232,10 +265,11 @@
       gap: 8px;
       margin: 12px 0;
     }
+
     .mode-btn {
       flex: 1;
       padding: 8px 12px;
-      border: 1px solid rgba(255,255,255,0.15);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 8px;
       background: transparent;
       color: var(--text-secondary);
@@ -245,13 +279,15 @@
       transition: all var(--transition);
       text-align: center;
     }
+
     .mode-btn:hover {
       border-color: var(--accent);
       color: var(--text);
     }
+
     .mode-btn.active {
       border-color: var(--accent);
-      background: rgba(52,152,219,0.15);
+      background: rgba(52, 152, 219, 0.15);
       color: var(--accent);
     }
 
@@ -269,20 +305,24 @@
       transition: all var(--transition);
       text-transform: uppercase;
     }
+
     .btn-start.ready {
       background: linear-gradient(135deg, var(--accent), #2980b9);
       color: white;
-      box-shadow: 0 4px 15px rgba(52,152,219,0.4);
+      box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
     }
+
     .btn-start.ready:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(52,152,219,0.5);
+      box-shadow: 0 6px 20px rgba(52, 152, 219, 0.5);
     }
+
     .btn-start.ready:active {
       transform: translateY(0);
     }
+
     .btn-start:disabled {
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text-secondary);
       cursor: not-allowed;
     }
@@ -293,21 +333,35 @@
       justify-content: space-between;
       align-items: center;
       padding: 8px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
-    .metric-row:last-child { border-bottom: none; }
+
+    .metric-row:last-child {
+      border-bottom: none;
+    }
+
     .metric-label {
       font-size: 0.8rem;
       color: var(--text-secondary);
     }
+
     .metric-value {
       font-family: 'SF Mono', 'Fira Code', monospace;
       font-size: 0.9rem;
       font-weight: 600;
     }
-    .metric-value.good { color: var(--success); }
-    .metric-value.warn { color: var(--warning); }
-    .metric-value.bad { color: var(--danger); }
+
+    .metric-value.good {
+      color: var(--success);
+    }
+
+    .metric-value.warn {
+      color: var(--warning);
+    }
+
+    .metric-value.bad {
+      color: var(--danger);
+    }
 
     /* Status LED */
     .status-led {
@@ -318,25 +372,39 @@
       margin-right: 6px;
       vertical-align: middle;
     }
-    .status-led.green { background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .status-led.yellow { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
-    .status-led.red { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+    .status-led.green {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .status-led.yellow {
+      background: var(--warning);
+      box-shadow: 0 0 8px var(--warning);
+    }
+
+    .status-led.red {
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+    }
 
     /* ===== SAVINGS BAR ===== */
     .savings-bar-container {
       width: 100%;
       height: 12px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 6px;
       overflow: hidden;
       margin: 8px 0;
     }
+
     .savings-bar {
       height: 100%;
       border-radius: 6px;
       transition: width 0.3s ease;
       background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
     }
+
     .savings-text {
       font-size: 0.8rem;
       color: var(--text-secondary);
@@ -348,6 +416,7 @@
     .accordion-section {
       margin-bottom: 16px;
     }
+
     .accordion-section summary {
       font-size: 1rem;
       font-weight: 600;
@@ -362,17 +431,26 @@
       align-items: center;
       gap: 10px;
     }
-    .accordion-section summary::-webkit-details-marker { display: none; }
-    .accordion-section summary:hover { background: #34495e; }
+
+    .accordion-section summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .accordion-section summary:hover {
+      background: #34495e;
+    }
+
     .accordion-section summary::before {
       content: '▶';
       font-size: 0.7rem;
       transition: transform var(--transition);
       color: var(--accent);
     }
+
     .accordion-section[open] summary::before {
       transform: rotate(90deg);
     }
+
     .accordion-section .tier-badge {
       font-size: 0.65rem;
       text-transform: uppercase;
@@ -381,9 +459,21 @@
       border-radius: 4px;
       font-weight: 600;
     }
-    .tier-executive { background: rgba(46,204,113,0.15); color: var(--success); }
-    .tier-engineer { background: rgba(52,152,219,0.15); color: var(--accent); }
-    .tier-specialist { background: rgba(155,89,182,0.15); color: #9b59b6; }
+
+    .tier-executive {
+      background: rgba(46, 204, 113, 0.15);
+      color: var(--success);
+    }
+
+    .tier-engineer {
+      background: rgba(52, 152, 219, 0.15);
+      color: var(--accent);
+    }
+
+    .tier-specialist {
+      background: rgba(155, 89, 182, 0.15);
+      color: #9b59b6;
+    }
 
     .accordion-content {
       padding: 20px;
@@ -392,34 +482,47 @@
       margin-top: -4px;
       box-shadow: var(--shadow);
     }
+
     .accordion-content p {
       font-size: 0.9rem;
       color: var(--text);
       line-height: 1.7;
       margin-bottom: 12px;
     }
-    .accordion-content p:last-child { margin-bottom: 0; }
-    .accordion-content .katex { font-size: 1.1rem; }
+
+    .accordion-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .accordion-content .katex {
+      font-size: 1.1rem;
+    }
 
     /* ===== RESULT PANEL ===== */
     .overlay-flash {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
     }
+
     .overlay-flash.show {
       opacity: 0.3;
     }
+
     #resultPanel h2 {
       font-size: 1.3rem;
     }
+
     #resultPanel p {
       font-size: 0.9rem;
       line-height: 1.5;
     }
+
     .btn-restart {
       padding: 10px 28px;
       border: 2px solid var(--accent);
@@ -430,6 +533,7 @@
       cursor: pointer;
       transition: all var(--transition);
     }
+
     .btn-restart:hover {
       background: var(--accent);
       color: white;
@@ -437,17 +541,49 @@
 
     /* ===== SCREEN SHAKE ===== */
     @keyframes shake {
-      0%, 100% { transform: translate(0); }
-      10% { transform: translate(-4px, 2px); }
-      20% { transform: translate(3px, -3px); }
-      30% { transform: translate(-3px, 4px); }
-      40% { transform: translate(4px, -2px); }
-      50% { transform: translate(-2px, 3px); }
-      60% { transform: translate(3px, -1px); }
-      70% { transform: translate(-4px, -2px); }
-      80% { transform: translate(2px, 4px); }
-      90% { transform: translate(-1px, -3px); }
+
+      0%,
+      100% {
+        transform: translate(0);
+      }
+
+      10% {
+        transform: translate(-4px, 2px);
+      }
+
+      20% {
+        transform: translate(3px, -3px);
+      }
+
+      30% {
+        transform: translate(-3px, 4px);
+      }
+
+      40% {
+        transform: translate(4px, -2px);
+      }
+
+      50% {
+        transform: translate(-2px, 3px);
+      }
+
+      60% {
+        transform: translate(3px, -1px);
+      }
+
+      70% {
+        transform: translate(-4px, -2px);
+      }
+
+      80% {
+        transform: translate(2px, 4px);
+      }
+
+      90% {
+        transform: translate(-1px, -3px);
+      }
     }
+
     .shake {
       animation: shake 0.4s ease-in-out;
     }
@@ -457,10 +593,14 @@
       .main-grid {
         grid-template-columns: 1fr;
       }
+
       .dashboard-scroll {
         max-height: none;
       }
-      body { padding: 12px; }
+
+      body {
+        padding: 12px;
+      }
     }
 
     /* ===== SENSOR TOGGLES ===== */
@@ -472,12 +612,15 @@
       border-radius: 8px;
       transition: background var(--transition);
     }
-    .sensor-row + .sensor-row {
+
+    .sensor-row+.sensor-row {
       margin-top: 2px;
     }
+
     .sensor-row:hover {
-      background: rgba(255,255,255,0.03);
+      background: rgba(255, 255, 255, 0.03);
     }
+
     .sensor-toggle {
       display: flex;
       align-items: center;
@@ -488,6 +631,7 @@
       user-select: none;
       min-width: 120px;
     }
+
     .sensor-toggle input[type="checkbox"] {
       accent-color: var(--accent);
       width: 14px;
@@ -495,6 +639,7 @@
       cursor: pointer;
       margin: 0;
     }
+
     .sensor-slider {
       flex: 1;
       min-width: 60px;
@@ -507,6 +652,7 @@
       outline: none;
       cursor: pointer;
     }
+
     .sensor-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -515,8 +661,9 @@
       border-radius: 50%;
       background: var(--text);
       cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
+
     .sensor-slider::-moz-range-thumb {
       width: 13px;
       height: 13px;
@@ -525,6 +672,7 @@
       cursor: pointer;
       border: none;
     }
+
     .sensor-value {
       font-family: 'SF Mono', 'Fira Code', monospace;
       font-size: 0.75rem;
@@ -532,6 +680,7 @@
       min-width: 32px;
       text-align: right;
     }
+
     .sensor-tooltip {
       position: relative;
       display: inline-flex;
@@ -540,13 +689,14 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.08);
+      background: rgba(255, 255, 255, 0.08);
       color: var(--text-secondary);
       font-size: 0.6rem;
       font-weight: 700;
       cursor: help;
       flex-shrink: 0;
     }
+
     .sensor-tooltip:hover::after {
       content: attr(data-tip);
       position: absolute;
@@ -560,10 +710,11 @@
       padding: 6px 10px;
       border-radius: 6px;
       white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       z-index: 10;
       pointer-events: none;
     }
+
     .sensor-tooltip:hover::before {
       content: '';
       position: absolute;
@@ -579,6 +730,7 @@
       color: var(--text-secondary);
       min-width: 72px;
     }
+
     .btn-remove-sensor {
       background: none;
       border: none;
@@ -591,15 +743,17 @@
       transition: opacity var(--transition);
       flex-shrink: 0;
     }
+
     .btn-remove-sensor:hover {
       opacity: 1;
     }
+
     .btn-add-beacon {
       display: block;
       width: 100%;
       padding: 8px;
       margin-top: 4px;
-      border: 1px dashed rgba(255,255,255,0.15);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
       border-radius: 8px;
       background: transparent;
       color: var(--text-secondary);
@@ -608,10 +762,11 @@
       cursor: pointer;
       transition: all var(--transition);
     }
+
     .btn-add-beacon:hover {
       border-color: var(--accent);
       color: var(--accent);
-      background: rgba(52,152,219,0.06);
+      background: rgba(52, 152, 219, 0.06);
     }
 
     /* ===== LOCKED STATE ===== */
@@ -619,6 +774,7 @@
       opacity: 0.4;
       cursor: not-allowed;
     }
+
     .locked input[type="range"],
     .locked input[type="number"],
     .locked .sensor-toggle input[type="checkbox"],
@@ -627,6 +783,7 @@
       opacity: 0.5;
       pointer-events: none;
     }
+
     .locked .mode-btn.active {
       opacity: 1;
     }
@@ -634,9 +791,10 @@
     /* ===== MISC ===== */
     .section-divider {
       height: 1px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       margin: 8px 0;
     }
+
     .badge {
       display: inline-block;
       font-size: 0.7rem;
@@ -644,11 +802,24 @@
       padding: 2px 8px;
       border-radius: 4px;
     }
-    .badge-good { background: rgba(46,204,113,0.15); color: var(--success); }
-    .badge-warn { background: rgba(243,156,18,0.15); color: var(--warning); }
-    .badge-bad { background: rgba(231,76,60,0.15); color: var(--danger); }
+
+    .badge-good {
+      background: rgba(46, 204, 113, 0.15);
+      color: var(--success);
+    }
+
+    .badge-warn {
+      background: rgba(243, 156, 18, 0.15);
+      color: var(--warning);
+    }
+
+    .badge-bad {
+      background: rgba(231, 76, 60, 0.15);
+      color: var(--danger);
+    }
   </style>
 </head>
+
 <body>
   <div id="app">
     <header>
@@ -682,8 +853,14 @@
               <span class="value" id="speedValue">2.0</span>
             </label>
             <input type="range" id="agvSpeed" min="0.5" max="5.0" step="0.1" value="2.0">
-            <div class="slider-hint">Faster speed increases the distance traveled per timestep, making the corridor harder to navigate.</div>
+            <div class="slider-hint">Faster speed increases the distance traveled per timestep, making the corridor
+              harder to navigate.</div>
           </div>
+
+          <label class="sensor-toggle" style="margin: 8px 0 12px; padding: 6px 0;">
+            <input type="checkbox" id="allowDivergence" checked>
+            <span>Stop on divergence on position</span>
+          </label>
 
           <details class="accordion-section" id="accSensors" open>
             <summary>Sensors Configuration</summary>
@@ -695,9 +872,11 @@
                     <input type="checkbox" id="sensorWheelOdometry" checked>
                     <span>Odometry</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+                  <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01"
+                    value="1.0">
                   <span class="sensor-value" id="wheelOdometryValue">1.00</span>
-                  <span class="sensor-tooltip" data-tip="Wheel encoders measure rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.">&#9432;</span>
+                  <span class="sensor-tooltip"
+                    data-tip="Wheel encoders measure rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.">&#9432;</span>
                 </div>
               </div>
               <div style="margin-top: 12px;">
@@ -707,22 +886,29 @@
                     <input type="checkbox" id="sensorLidar" checked>
                     <span>LIDAR</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="lidarAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+                  <input type="range" class="sensor-slider" id="lidarAccuracy" min="0.1" max="5.0" step="0.01"
+                    value="1.0">
                   <span class="sensor-value" id="lidarValue">1.00</span>
-                  <span class="sensor-tooltip" data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
+                  <span class="sensor-tooltip"
+                    data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
                 </div>
-                <div style="margin: 10px 0 4px 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Beacons (detected by LIDAR)</div>
+                <div
+                  style="margin: 10px 0 4px 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">
+                  Beacons (detected by LIDAR)</div>
                 <div id="externalSensorsList"></div>
                 <button class="btn-add-beacon" id="btnAddBeacon">+ Add Beacon</button>
-                <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">Click +Add, then click the map. Drag to move. ✕ to remove.</p>
+                <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">Click +Add, then click the
+                  map. Drag to move. ✕ to remove.</p>
                 <div class="sensor-row" style="margin-top: 8px;">
                   <label class="sensor-toggle">
                     <input type="checkbox" id="sensorGps">
                     <span>GPS</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="gpsAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+                  <input type="range" class="sensor-slider" id="gpsAccuracy" min="0.1" max="5.0" step="0.01"
+                    value="1.0">
                   <span class="sensor-value" id="gpsValue">1.00</span>
-                  <span class="sensor-tooltip" data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
+                  <span class="sensor-tooltip"
+                    data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
                 </div>
               </div>
             </div>
@@ -734,7 +920,8 @@
               <div>
                 <h2>Route Configuration</h2>
                 <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
-                  Drag the <strong style="color: var(--success);">A</strong> and <strong style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
+                  Drag the <strong style="color: var(--success);">A</strong> and <strong
+                    style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
                 </p>
               </div>
               <div style="margin-top: 12px;">
@@ -745,7 +932,8 @@
                 </div>
                 <div class="corridor-params show" id="corridorParams">
                   <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
-                    Drag the <strong style="color: var(--warning);">corridor markers</strong> along the path on the map to set the featureless zone.
+                    Drag the <strong style="color: var(--warning);">corridor markers</strong> along the path on the map
+                    to set the featureless zone.
                   </p>
                 </div>
               </div>
@@ -763,7 +951,8 @@
               </span>
             </div>
             <div class="metric-row">
-              <span class="metric-label">Position Uncertainty <span style="font-family: monospace;">(tr(P))</span></span>
+              <span class="metric-label">Position Uncertainty <span
+                  style="font-family: monospace;">(tr(P))</span></span>
               <span class="metric-value" id="uncertaintyDisplay">—</span>
             </div>
             <div class="metric-row">
@@ -785,7 +974,8 @@
               <div class="savings-bar" id="savingsBar" style="width: 0%;"></div>
             </div>
             <div class="savings-text" id="savingsNarrative">
-              Tune the EKF to reduce lidar specification costs. An optimal filter can save up to <strong>40% per unit</strong>.
+              Tune the EKF to reduce lidar specification costs. An optimal filter can save up to <strong>40% per
+                unit</strong>.
             </div>
           </div>
 
@@ -795,9 +985,13 @@
           <div>
             <h2>Business Impact</h2>
             <div class="savings-text">
-              <p style="margin-bottom: 8px;"><strong>Reduced Deployment Risk:</strong> The "slippery floor" scenario simulates real-world odometry failure (slick surfaces, uneven terrain). A well-tuned EKF prevents catastrophic divergence.</p>
-              <p style="margin-bottom: 8px;"><strong>Lower BOM Costs:</strong> With optimal sensor fusion, you can use lower-spec lidars/cameras while maintaining reliability — reducing per-unit cost by up to 40%.</p>
-              <p><strong>Minimized Downtime:</strong> Real-time state recovery means the AGV handles edge cases without human intervention, keeping logistics lines running.</p>
+              <p style="margin-bottom: 8px;"><strong>Reduced Deployment Risk:</strong> The "slippery floor" scenario
+                simulates real-world odometry failure (slick surfaces, uneven terrain). A well-tuned EKF prevents
+                catastrophic divergence.</p>
+              <p style="margin-bottom: 8px;"><strong>Lower BOM Costs:</strong> With optimal sensor fusion, you can use
+                lower-spec lidars/cameras while maintaining reliability — reducing per-unit cost by up to 40%.</p>
+              <p><strong>Minimized Downtime:</strong> Real-time state recovery means the AGV handles edge cases without
+                human intervention, keeping logistics lines running.</p>
             </div>
           </div>
 
@@ -812,56 +1006,85 @@
       <details class="accordion-section" id="accExecutive">
         <summary><span class="tier-badge tier-executive">Executive</span> The Business Case for Sensor Fusion</summary>
         <div class="accordion-content">
-          <p>Imagine walking through a pitch-black warehouse. You count your steps (odometry), but each step introduces drift — after 50 meters, you could be several meters off course. Every time you reach out and touch a wall (sensor update), you correct your mental map.</p>
-          <p>The Extended Kalman Filter does exactly this for autonomous vehicles: it continuously weighs the robot's internal motion estimate against external sensor readings. When tuned correctly, it ensures the robot always knows where it is — even when the floor is slippery or visual landmarks disappear.</p>
-          <p><strong>Business outcome:</strong> Reliable navigation without expensive high-precision sensors. Lower costs, higher uptime, safer operations.</p>
+          <p>Imagine walking through a pitch-black warehouse. You count your steps (odometry), but each step introduces
+            drift — after 50 meters, you could be several meters off course. Every time you reach out and touch a wall
+            (sensor update), you correct your mental map.</p>
+          <p>The Extended Kalman Filter does exactly this for autonomous vehicles: it continuously weighs the robot's
+            internal motion estimate against external sensor readings. When tuned correctly, it ensures the robot always
+            knows where it is — even when the floor is slippery or visual landmarks disappear.</p>
+          <p><strong>Business outcome:</strong> Reliable navigation without expensive high-precision sensors. Lower
+            costs, higher uptime, safer operations.</p>
         </div>
       </details>
 
       <!-- ENGINEER -->
       <details class="accordion-section" id="accEngineer">
-        <summary><span class="tier-badge tier-engineer">Engineer</span> The Predict-Update Loop &amp; Covariance Tuning</summary>
+        <summary><span class="tier-badge tier-engineer">Engineer</span> The Predict-Update Loop &amp; Covariance Tuning
+        </summary>
         <div class="accordion-content">
           <p>The EKF operates in two phases per timestep:</p>
-          <p><strong>1. Predict (Motion Model):</strong> The state <code>x</code> is advanced via a non-linear kinematic function <code>f(x, u)</code>. The covariance <code>P</code> grows because the motion model has uncertainty — this is encoded in the <strong>Process Noise matrix Q</strong>.</p>
-          <p><strong>2. Update (Sensor Fusion):</strong> A noisy measurement <code>z</code> arrives. The filter computes the <strong>Kalman Gain K = P·Hᵀ(H·P·Hᵀ + R)⁻¹</strong>, which optimally weights the prediction vs. the measurement. The <strong>Measurement Noise matrix R</strong> determines how much the filter trusts the sensor.</p>
+          <p><strong>1. Predict (Motion Model):</strong> The state <code>x</code> is advanced via a non-linear kinematic
+            function <code>f(x, u)</code>. The covariance <code>P</code> grows because the motion model has uncertainty
+            — this is encoded in the <strong>Process Noise matrix Q</strong>.</p>
+          <p><strong>2. Update (Sensor Fusion):</strong> A noisy measurement <code>z</code> arrives. The filter computes
+            the <strong>Kalman Gain K = P·Hᵀ(H·P·Hᵀ + R)⁻¹</strong>, which optimally weights the prediction vs. the
+            measurement. The <strong>Measurement Noise matrix R</strong> determines how much the filter trusts the
+            sensor.</p>
           <p>The Q and R matrices are your <em>confidence dials</em>:</p>
           <p>— Low Q + high R = "trust the motion model, ignore noisy sensors"<br>
-          — High Q + low R = "trust the sensors, the motion model is unreliable"</p>
-          <p>A balanced tuning (Q ≈ R in the right units) allows the filter to dynamically adapt — trusting the model when sensors fail, and trusting sensors when the model drifts.</p>
+            — High Q + low R = "trust the sensors, the motion model is unreliable"</p>
+          <p>A balanced tuning (Q ≈ R in the right units) allows the filter to dynamically adapt — trusting the model
+            when sensors fail, and trusting sensors when the model drifts.</p>
         </div>
       </details>
 
       <!-- SPECIALIST -->
       <details class="accordion-section" id="accSpecialist">
-        <summary><span class="tier-badge tier-specialist">Specialist</span> EKF Mathematics &amp; Jacobian Linearization</summary>
+        <summary><span class="tier-badge tier-specialist">Specialist</span> EKF Mathematics &amp; Jacobian Linearization
+        </summary>
         <div class="accordion-content">
           <p><strong>State Vector</strong> (4 DOF): planar pose + velocity</p>
           <div class="katex-block">$$ \mathbf{x}_k = \begin{bmatrix} x \\ y \\ \theta \\ v \end{bmatrix} $$</div>
 
           <p><strong>Non-Linear Motion Model</strong></p>
-          <div class="katex-block">$$ \mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t \\ y_k + v_k \sin(\theta_k) \Delta t \\ \theta_k + \dot{\theta} \Delta t \\ v_k + \dot{v} \Delta t \end{bmatrix} $$</div>
+          <div class="katex-block">$$ \mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k
+            \cos(\theta_k) \Delta t \\ y_k + v_k \sin(\theta_k) \Delta t \\ \theta_k + \dot{\theta} \Delta t \\ v_k +
+            \dot{v} \Delta t \end{bmatrix} $$</div>
 
           <p><strong>Jacobian of f w.r.t. state</strong> (linearization point: current estimate)</p>
-          <div class="katex-block">$$ \mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k} = \begin{bmatrix} 1 & 0 & -v_k \sin(\theta_k) \Delta t & \cos(\theta_k) \Delta t \\ 0 & 1 & v_k \cos(\theta_k) \Delta t & \sin(\theta_k) \Delta t \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} $$</div>
+          <div class="katex-block">$$ \mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_{k-1},
+            \mathbf{u}_k} = \begin{bmatrix} 1 & 0 & -v_k \sin(\theta_k) \Delta t & \cos(\theta_k) \Delta t \\ 0 & 1 &
+            v_k \cos(\theta_k) \Delta t & \sin(\theta_k) \Delta t \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} $$
+          </div>
 
           <p><strong>Predict Step</strong></p>
           <div class="katex-block">$$ \mathbf{x}_k^- = f(\mathbf{x}_{k-1}, \mathbf{u}_k) $$</div>
-          <div class="katex-block">$$ \mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \mathbf{Q} $$</div>
+          <div class="katex-block">$$ \mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} +
+            \mathbf{Q} $$</div>
 
           <p><strong>Measurement Model</strong> (range &amp; bearing to landmark at (l<sub>x</sub>, l<sub>y</sub>))</p>
-          <div class="katex-block">$$ \mathbf{z}_k = h(\mathbf{x}_k) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2} \\ \text{atan2}(l_y - y_k,\; l_x - x_k) - \theta_k \end{bmatrix} $$</div>
+          <div class="katex-block">$$ \mathbf{z}_k = h(\mathbf{x}_k) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y -
+            y_k)^2} \\ \text{atan2}(l_y - y_k,\; l_x - x_k) - \theta_k \end{bmatrix} $$</div>
 
           <p><strong>Jacobian of h w.r.t. state</strong></p>
-          <div class="katex-block">$$ \mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-} = \begin{bmatrix} -\frac{\Delta x}{d} & -\frac{\Delta y}{d} & 0 & 0 \\ \frac{\Delta y}{d^2} & -\frac{\Delta x}{d^2} & -1 & 0 \end{bmatrix} $$</div>
-          <p style="font-size: 0.8rem; color: var(--text-secondary);">where Δx = l<sub>x</sub> − x, Δy = l<sub>y</sub> − y, d = √(Δx² + Δy²)</p>
+          <div class="katex-block">$$ \mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-} =
+            \begin{bmatrix} -\frac{\Delta x}{d} & -\frac{\Delta y}{d} & 0 & 0 \\ \frac{\Delta y}{d^2} & -\frac{\Delta
+            x}{d^2} & -1 & 0 \end{bmatrix} $$</div>
+          <p style="font-size: 0.8rem; color: var(--text-secondary);">where Δx = l<sub>x</sub> − x, Δy = l<sub>y</sub> −
+            y, d = √(Δx² + Δy²)</p>
 
           <p><strong>Kalman Gain &amp; Update Step</strong></p>
-          <div class="katex-block">$$ \mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1} $$</div>
-          <div class="katex-block">$$ \mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k \left( \mathbf{z}_k - h(\mathbf{x}_k^-) \right) $$</div>
-          <div class="katex-block">$$ \mathbf{P}_k^+ = \left( \mathbf{I} - \mathbf{K}_k \mathbf{H}_k \right) \mathbf{P}_k^- $$</div>
+          <div class="katex-block">$$ \mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k
+            \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1} $$</div>
+          <div class="katex-block">$$ \mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k \left( \mathbf{z}_k -
+            h(\mathbf{x}_k^-) \right) $$</div>
+          <div class="katex-block">$$ \mathbf{P}_k^+ = \left( \mathbf{I} - \mathbf{K}_k \mathbf{H}_k \right)
+            \mathbf{P}_k^- $$</div>
 
-          <p><strong>Key Insight:</strong> Because both <strong>f</strong> and <strong>h</strong> are non-linear, we linearize them via their Jacobians at each timestep — this is what makes the filter <em>Extended</em>. The Jacobians capture the local slope of the non-linear functions, enabling approximately optimal fusion of non-linear models and measurements.</p>
+          <p><strong>Key Insight:</strong> Because both <strong>f</strong> and <strong>h</strong> are non-linear, we
+            linearize them via their Jacobians at each timestep — this is what makes the filter <em>Extended</em>. The
+            Jacobians capture the local slope of the non-linear functions, enabling approximately optimal fusion of
+            non-linear models and measurements.</p>
         </div>
       </details>
 
@@ -875,4 +1098,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>

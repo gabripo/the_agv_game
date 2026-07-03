@@ -1194,7 +1194,8 @@ function checkCollision() {
 }
 
 function checkDivergence() {
-  if (simTime <= slipEndTime + 8) return false;
+  const allow = document.getElementById('allowDivergence');
+  if (allow && !allow.checked) return false;
   return currentDivergence > 60;
 }
 
