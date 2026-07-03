@@ -880,12 +880,6 @@ function drawExternalSensors() {
   for (const s of externalSensors) {
     const hover = !running && !completed && !crashed && Math.hypot(mouseX - s.x, mouseY - s.y) < 18;
 
-    // Range ring
-    noFill();
-    stroke(155, 89, 182, hover ? 50 : 25);
-    strokeWeight(1);
-    circle(s.x, s.y, MAX_SENSOR_RANGE * 2);
-
     // Sensor icon
     noStroke();
     fill(155, 89, 182, hover ? 220 : 160);
