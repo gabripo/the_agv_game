@@ -268,9 +268,8 @@ function buildTrajectory() {
 function buildLandmarks() {
   if (externalSensors.length > 0 || externalSensorIdCounter > 0) return;
   const defaultPositions = [
-    { x: 100, y: 480 }, { x: 100, y: 300 }, { x: 200, y: 200 },
-    { x: 300, y: 100 }, { x: 300, y: 480 }, { x: 450, y: 480 },
-    { x: 600, y: 480 }, { x: 600, y: 100 }, { x: 750, y: 400 }, { x: 750, y: 100 }
+    { x: 100, y: 480 }, { x: 100, y: 300 },
+    { x: 300, y: 100 }, { x: 600, y: 480 }, { x: 750, y: 100 }
   ];
   for (const pos of defaultPositions) {
     externalSensors.push({ id: externalSensorIdCounter++, x: pos.x, y: pos.y, accuracy: 1.0 });
