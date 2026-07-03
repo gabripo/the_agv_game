@@ -711,76 +711,72 @@
           <!-- START BUTTON -->
           <button class="btn-start ready" id="btnStart" onclick="startSimulation()">▶ DEPLOY AGV</button>
 
-          <div class="section-divider"></div>
-
-          <!-- PROPRIOCEPTIVE -->
-          <div>
-            <h2>Interior Sensors</h2>
-            <div class="sensor-row">
-              <label class="sensor-toggle">
-                <input type="checkbox" id="sensorWheelOdometry" checked>
-                <span>Odometry</span>
-              </label>
-              <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
-              <span class="sensor-value" id="wheelOdometryValue">1.00</span>
-              <span class="sensor-tooltip" data-tip="Wheel encoders measure rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.">&#9432;</span>
+          <details class="accordion-section" id="accSensors" open>
+            <summary>Sensors Configuration</summary>
+            <div class="accordion-content" style="padding: 12px 16px;">
+              <div>
+                <h2>Interior Sensors</h2>
+                <div class="sensor-row">
+                  <label class="sensor-toggle">
+                    <input type="checkbox" id="sensorWheelOdometry" checked>
+                    <span>Odometry</span>
+                  </label>
+                  <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+                  <span class="sensor-value" id="wheelOdometryValue">1.00</span>
+                  <span class="sensor-tooltip" data-tip="Wheel encoders measure rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.">&#9432;</span>
+                </div>
+              </div>
+              <div style="margin-top: 12px;">
+                <h2>Exterior Sensors</h2>
+                <div class="sensor-row">
+                  <label class="sensor-toggle">
+                    <input type="checkbox" id="sensorLidar" checked>
+                    <span>LIDAR</span>
+                  </label>
+                  <input type="range" class="sensor-slider" id="lidarAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+                  <span class="sensor-value" id="lidarValue">1.00</span>
+                  <span class="sensor-tooltip" data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
+                </div>
+                <div style="margin: 10px 0 4px 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Beacons (detected by LIDAR)</div>
+                <div id="externalSensorsList"></div>
+                <button class="btn-add-beacon" id="btnAddBeacon">+ Add Beacon</button>
+                <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">Click +Add, then click the map. Drag to move. ✕ to remove.</p>
+                <div class="sensor-row" style="margin-top: 8px;">
+                  <label class="sensor-toggle">
+                    <input type="checkbox" id="sensorGps">
+                    <span>GPS</span>
+                  </label>
+                  <input type="range" class="sensor-slider" id="gpsAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+                  <span class="sensor-value" id="gpsValue">1.00</span>
+                  <span class="sensor-tooltip" data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
+                </div>
+              </div>
             </div>
-          </div>
+          </details>
 
-          <div class="section-divider"></div>
-
-          <!-- EXTERIOCEPTIVE -->
-          <div>
-            <h2>Exterior Sensors</h2>
-            <div class="sensor-row">
-              <label class="sensor-toggle">
-                <input type="checkbox" id="sensorLidar" checked>
-                <span>LIDAR</span>
-              </label>
-              <input type="range" class="sensor-slider" id="lidarAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
-              <span class="sensor-value" id="lidarValue">1.00</span>
-              <span class="sensor-tooltip" data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
+          <details class="accordion-section" id="accRoute" open>
+            <summary>Route Configuration</summary>
+            <div class="accordion-content" style="padding: 12px 16px;">
+              <div>
+                <h2>Route Configuration</h2>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+                  Drag the <strong style="color: var(--success);">A</strong> and <strong style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
+                </p>
+              </div>
+              <div style="margin-top: 12px;">
+                <h2>Corridor Scenario</h2>
+                <div class="mode-selector" id="modeSelector">
+                  <button class="mode-btn active" data-mode="deterministic">Deterministic</button>
+                  <button class="mode-btn" data-mode="random">Semi-Random</button>
+                </div>
+                <div class="corridor-params show" id="corridorParams">
+                  <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+                    Drag the <strong style="color: var(--warning);">corridor markers</strong> along the path on the map to set the featureless zone.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div style="margin: 10px 0 4px 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Beacons (detected by LIDAR)</div>
-            <div id="externalSensorsList"></div>
-            <button class="btn-add-beacon" id="btnAddBeacon">+ Add Beacon</button>
-            <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">Click +Add, then click the map. Drag to move. ✕ to remove.</p>
-            <div class="sensor-row" style="margin-top: 8px;">
-              <label class="sensor-toggle">
-                <input type="checkbox" id="sensorGps">
-                <span>GPS</span>
-              </label>
-              <input type="range" class="sensor-slider" id="gpsAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
-              <span class="sensor-value" id="gpsValue">1.00</span>
-              <span class="sensor-tooltip" data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
-            </div>
-          </div>
-
-          <div class="section-divider"></div>
-
-          <!-- ROUTE CONFIG -->
-          <div>
-            <h2>Route Configuration</h2>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
-              Drag the <strong style="color: var(--success);">A</strong> and <strong style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
-            </p>
-          </div>
-
-          <div class="section-divider"></div>
-
-          <!-- SLIP MODE -->
-          <div>
-            <h2>Corridor Scenario</h2>
-            <div class="mode-selector" id="modeSelector">
-              <button class="mode-btn active" data-mode="deterministic">Deterministic</button>
-              <button class="mode-btn" data-mode="random">Semi-Random</button>
-            </div>
-            <div class="corridor-params show" id="corridorParams">
-              <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
-                Drag the <strong style="color: var(--warning);">corridor markers</strong> along the path on the map to set the featureless zone.
-              </p>
-            </div>
-          </div>
+          </details>
 
           <!-- LIVE METRICS -->
           <div>
