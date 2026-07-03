@@ -227,10 +227,19 @@
             <span id="endCoordDisplay">(700, 160)</span>
           </div>
 
-          <label class="sensor-toggle" style="margin: 8px 0 12px; padding: 6px 0;">
-            <input type="checkbox" id="allowDivergence" checked>
-            <span>Stop on divergence on position</span>
-          </label>
+          <div class="sensor-row" style="margin: 8px 0 12px;">
+            <label class="sensor-toggle">
+              <input type="checkbox" id="allowDivergence" checked>
+              <span>Stop on divergence</span>
+            </label>
+            <span id="divergenceSliderGroup" style="display: flex; flex: 1; align-items: center; gap: 8px;">
+              <input type="range" class="sensor-slider" id="divergenceThreshold" min="0" max="200" step="1" value="60"
+                title="Divergence threshold in pixels. 0 = always stop, 200 = effectively disabled (larger than the canvas).">
+              <span class="sensor-value" id="divergenceThresholdValue">60</span>
+              <span style="cursor: help; font-size: 0.75rem; color: var(--text-secondary);"
+                title="If the EKF estimate strays more than this many pixels from the true AGV position, the simulation stops.">px</span>
+            </span>
+          </div>
 
           <button class="btn-start" id="btnReset" onclick="resetConfig()"
             style="margin-top: 4px; padding: 10px; font-size: 0.85rem; background: rgba(255,255,255,0.06); color: var(--text-secondary);">↺

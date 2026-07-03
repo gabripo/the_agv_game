@@ -238,6 +238,7 @@ const CORRIDOR_T_START = 120;
 const CORRIDOR_T_END = 280;
 const ROBOT_RADIUS = 16;
 let lidarRange = 400;
+let divergenceThreshold = 60;
 const LIDAR_COST = 5000;
 const MAX_SAVINGS_SIGMA = 3.0;
 
@@ -1332,7 +1333,7 @@ function checkCollision() {
 function checkDivergence() {
   const allow = document.getElementById('allowDivergence');
   if (allow && !allow.checked) return false;
-  return currentDivergence > 60;
+  return currentDivergence > divergenceThreshold;
 }
 
 function gameOver(reason) {
@@ -1553,6 +1554,11 @@ function resetConfig() {
 
   document.getElementById('allowDivergence').checked = true;
 
+  document.getElementById('divergenceThreshold').value = '60';
+  document.getElementById('divergenceThresholdValue').textContent = '60';
+  divergenceThreshold = 60;
+  updateSliderBg(document.getElementById('divergenceThreshold'));
+
   // Route — reset start/end points and corridor markers
   startPoint = { x: 150, y: 440 };
   endPoint = { x: 700, y: 160 };
@@ -1595,7 +1601,7 @@ function updateSliderBg(slider) {
   const max = parseFloat(slider.max);
   const val = parseFloat(slider.value);
   const pct = ((val - min) / (max - min)) * 100;
-  slider.style.background = 'linear-gradient(to right, var(--danger), var(--warning), var(--success))';
+  slider.style.backgroundImage = 'linear-gradient(to right, var(--danger), var(--warning), var(--success))';
   slider.style.backgroundSize = pct + '% 100%';
   slider.style.backgroundRepeat = 'no-repeat';
 }
@@ -1709,6 +1715,26 @@ if (typeof document !== 'undefined') {
         buildTrajectory();
       }
     });
+
+    const divThresh = document.getElementById('divergenceThreshold');
+    if (divThresh) {
+      divergenceThreshold = parseFloat(divThresh.value);
+      updateSliderBg(divThresh);
+      divThresh.addEventListener('input', function () {
+        divergenceThreshold = parseFloat(this.value);
+        document.getElementById('divergenceThresholdValue').textContent = this.value;
+        updateSliderBg(this);
+      });
+    }
+    const divCheck = document.getElementById('allowDivergence');
+    if (divCheck) {
+      function toggleDivSlider() {
+        const g = document.getElementById('divergenceSliderGroup');
+        if (g) g.style.display = divCheck.checked ? '' : 'none';
+      }
+      toggleDivSlider();
+      divCheck.addEventListener('change', toggleDivSlider);
+    }
 
     document.getElementById('lidarRange').addEventListener('input', function () {
       lidarRange = parseFloat(this.value);
