@@ -599,6 +599,46 @@
       border-top-color: var(--surface);
     }
 
+    .sensor-id {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      min-width: 72px;
+    }
+    .btn-remove-sensor {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      opacity: 0.6;
+      transition: opacity var(--transition);
+      flex-shrink: 0;
+    }
+    .btn-remove-sensor:hover {
+      opacity: 1;
+    }
+    .btn-add-beacon {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px dashed rgba(255,255,255,0.15);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-add-beacon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(52,152,219,0.06);
+    }
+
     /* ===== LOCKED STATE ===== */
     .locked .mode-btn {
       opacity: 0.4;
@@ -607,7 +647,8 @@
     .locked input[type="range"],
     .locked input[type="number"],
     .locked .sensor-toggle input[type="checkbox"],
-    .locked .sensor-slider {
+    .locked .sensor-slider,
+    .locked .btn-add-beacon {
       opacity: 0.5;
       pointer-events: none;
     }
@@ -700,6 +741,16 @@
               <span class="sensor-value" id="gpsValue">1.00</span>
               <span class="sensor-tooltip" data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
             </div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- EXTERNAL BEACONS -->
+          <div>
+            <h2>External Beacons</h2>
+            <div id="externalSensorsList"></div>
+            <button class="btn-add-beacon" id="btnAddBeacon">+ Add Beacon</button>
+            <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">Click +Add, then click the map. Drag to move. ✕ to remove.</p>
           </div>
 
           <div class="section-divider"></div>

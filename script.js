@@ -196,6 +196,11 @@ let sensorLidarAccuracy = 1.0;
 let sensorGpsEnabled = false;
 let sensorGpsAccuracy = 1.0;
 
+let externalSensors = [];
+let externalSensorIdCounter = 0;
+let placingSensor = false;
+let dragSensorId = null;
+
 function updateSensorTuning() {
   sensorWheelAccuracy = parseFloat(document.getElementById('wheelOdometryAccuracy').value) || 1.0;
   sensorLidarAccuracy = parseFloat(document.getElementById('lidarAccuracy').value) || 1.0;
@@ -261,18 +266,16 @@ function buildTrajectory() {
 }
 
 function buildLandmarks() {
-  landmarks = [
-    { x: 100, y: 480 },
-    { x: 100, y: 300 },
-    { x: 200, y: 200 },
-    { x: 300, y: 100 },
-    { x: 300, y: 480 },
-    { x: 450, y: 480 },
-    { x: 600, y: 480 },
-    { x: 600, y: 100 },
-    { x: 750, y: 400 },
-    { x: 750, y: 100 }
+  if (externalSensors.length > 0 || externalSensorIdCounter > 0) return;
+  const defaultPositions = [
+    { x: 100, y: 480 }, { x: 100, y: 300 }, { x: 200, y: 200 },
+    { x: 300, y: 100 }, { x: 300, y: 480 }, { x: 450, y: 480 },
+    { x: 600, y: 480 }, { x: 600, y: 100 }, { x: 750, y: 400 }, { x: 750, y: 100 }
   ];
+  for (const pos of defaultPositions) {
+    externalSensors.push({ id: externalSensorIdCounter++, x: pos.x, y: pos.y, accuracy: 1.0 });
+  }
+  renderExternalSensorList();
 }
 
 function buildRacks() {
@@ -364,9 +367,9 @@ function getTrueState(t) {
 
 function getVisibleLandmarks(state) {
   if (isInCorridor(simTime)) return [];
-  return landmarks.filter(lm => {
-    const dx = lm.x - state.x;
-    const dy = lm.y - state.y;
+  return externalSensors.filter(s => {
+    const dx = s.x - state.x;
+    const dy = s.y - state.y;
     return Math.sqrt(dx * dx + dy * dy) < MAX_SENSOR_RANGE;
   });
 }
@@ -473,6 +476,29 @@ function getNearestTrajectoryIndex(mx, my) {
 function mousePressed() {
   if (running || completed || crashed) return;
 
+  // Placing a new external sensor
+  if (placingSensor) {
+    externalSensors.push({
+      id: externalSensorIdCounter++,
+      x: constrain(mouseX, 20, width - 20),
+      y: constrain(mouseY, 20, height - 20),
+      accuracy: 1.0
+    });
+    placingSensor = false;
+    renderExternalSensorList();
+    document.getElementById('btnAddBeacon').textContent = '+ Add Beacon';
+    return false;
+  }
+
+  // Drag external sensors
+  for (const s of externalSensors) {
+    if (Math.hypot(mouseX - s.x, mouseY - s.y) < 18) {
+      dragTarget = 'externalSensor';
+      dragSensorId = s.id;
+      return false;
+    }
+  }
+
   const dStart = Math.hypot(mouseX - startPoint.x, mouseY - startPoint.y);
   const dEnd = Math.hypot(mouseX - endPoint.x, mouseY - endPoint.y);
   if (dStart < 24) {
@@ -537,11 +563,19 @@ function mouseDragged() {
       userCorridorEnd = Math.max(idx, userCorridorStart + 10);
     }
     computeSlipParams();
+  } else if (dragTarget === 'externalSensor') {
+    const s = externalSensors.find(s => s.id === dragSensorId);
+    if (s) {
+      s.x = constrain(mouseX, 20, width - 20);
+      s.y = constrain(mouseY, 20, height - 20);
+      renderExternalSensorList();
+    }
   }
 }
 
 function mouseReleased() {
   dragTarget = null;
+  dragSensorId = null;
 }
 
 // ============================================================
@@ -556,6 +590,7 @@ function draw() {
   if (completed || crashed) {
     drawRacks();
     drawLandmarks();
+    drawExternalSensors();
     drawStartEnd();
     drawTrajectoryPath();
     drawTruePath();
@@ -570,6 +605,7 @@ function draw() {
   if (!running) {
     drawRacks();
     drawLandmarks();
+    drawExternalSensors();
     drawStartEnd();
     drawTrajectoryPath();
     drawCorridorMarkers();
@@ -623,6 +659,23 @@ function draw() {
     ekf.gpsUpdate(gpsMeas);
   }
 
+  // External sensor updates (position beacons)
+  for (const s of externalSensors) {
+    const dx = trueSt.x - s.x;
+    const dy = trueSt.y - s.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < MAX_SENSOR_RANGE) {
+      const noise = 1.0 / Math.max(s.accuracy, 0.01);
+      const meas = [
+        trueSt.x + (Math.random() - 0.5) * noise * 4,
+        trueSt.y + (Math.random() - 0.5) * noise * 4,
+        noise * 2,
+        noise * 2
+      ];
+      ekf.gpsUpdate(meas);
+    }
+  }
+
   // Compute divergence
   const ex = ekf.getX() - trueSt.x;
   const ey = ekf.getY() - trueSt.y;
@@ -661,6 +714,7 @@ function draw() {
   // --- RENDER ---
   drawRacks();
   drawLandmarks();
+  drawExternalSensors();
   drawStartEnd();
   drawTrajectoryPath();
   drawTruePath();
@@ -712,28 +766,7 @@ function drawRacks() {
   }
 }
 
-function drawLandmarks() {
-  for (const lm of landmarks) {
-    // Beacon pole
-    stroke(100, 110, 130);
-    strokeWeight(2);
-    line(lm.x, lm.y - 15, lm.x, lm.y + 15);
-    line(lm.x - 10, lm.y, lm.x + 10, lm.y);
-
-    // Beacon light
-    noStroke();
-    fill(52, 152, 219, 100);
-    circle(lm.x, lm.y, 14);
-    fill(52, 152, 219, 200);
-    circle(lm.x, lm.y, 6);
-
-    // Visibility range (subtle)
-    noFill();
-    stroke(52, 152, 219, 15);
-    strokeWeight(1);
-    circle(lm.x, lm.y, MAX_SENSOR_RANGE * 2);
-  }
-}
+function drawLandmarks() {}
 
 function drawStartEnd() {
   const sx = startPoint.x, sy = startPoint.y;
@@ -839,6 +872,62 @@ function drawCorridorMarkers() {
   textSize(9);
   const mid = trajectory[Math.floor((sIdx + eIdx) / 2)];
   text('featureless corridor', mid.x, mid.y + 16);
+}
+
+function drawExternalSensors() {
+  for (const s of externalSensors) {
+    const hover = !running && !completed && !crashed && Math.hypot(mouseX - s.x, mouseY - s.y) < 18;
+
+    // Range ring
+    noFill();
+    stroke(155, 89, 182, hover ? 50 : 25);
+    strokeWeight(1);
+    circle(s.x, s.y, MAX_SENSOR_RANGE * 2);
+
+    // Sensor icon
+    noStroke();
+    fill(155, 89, 182, hover ? 220 : 160);
+    circle(s.x, s.y, hover ? 22 : 16);
+    fill(255, 255, 255, hover ? 220 : 160);
+    textAlign(CENTER, CENTER);
+    textSize(hover ? 11 : 9);
+    text('\u2699', s.x, s.y + 1);
+
+    // Label
+    if (hover) {
+      fill(155, 89, 182, 180);
+      noStroke();
+      textSize(8);
+      textAlign(CENTER, TOP);
+      text('ext. sensor', s.x, s.y + 16);
+    }
+  }
+}
+
+function renderExternalSensorList() {
+  const container = document.getElementById('externalSensorsList');
+  if (!container) return;
+  container.innerHTML = '';
+  for (const s of externalSensors) {
+    const row = document.createElement('div');
+    row.className = 'sensor-row';
+    row.innerHTML =
+      '<span class="sensor-id">Beacon ' + (s.id + 1) + '</span>' +
+      '<input type="range" class="sensor-slider" min="0.1" max="5.0" step="0.01" value="' + s.accuracy.toFixed(2) + '">' +
+      '<span class="sensor-value" id="extVal' + s.id + '">' + s.accuracy.toFixed(2) + '</span>' +
+      '<button class="btn-remove-sensor" data-id="' + s.id + '">&times;</button>';
+    const slider = row.querySelector('.sensor-slider');
+    const valSpan = row.querySelector('.sensor-value');
+    slider.addEventListener('input', function () {
+      s.accuracy = parseFloat(this.value);
+      valSpan.textContent = s.accuracy.toFixed(2);
+    });
+    row.querySelector('.btn-remove-sensor').addEventListener('click', function () {
+      externalSensors = externalSensors.filter(ext => ext.id !== s.id);
+      renderExternalSensorList();
+    });
+    container.appendChild(row);
+  }
 }
 
 function drawTrajectoryPath() {
@@ -1263,6 +1352,13 @@ document.addEventListener('DOMContentLoaded', function () {
   setupSensorListener('wheelOdometry');
   setupSensorListener('lidar');
   setupSensorListener('gps');
+
+  document.getElementById('btnAddBeacon').addEventListener('click', function () {
+    if (running || completed || crashed) return;
+    placingSensor = !placingSensor;
+    this.textContent = placingSensor ? 'Click map to place...' : '+ Add Beacon';
+  });
+  renderExternalSensorList();
 
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', function () {
