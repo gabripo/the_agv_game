@@ -142,6 +142,46 @@
                 The
                 Jacobians capture the local slope of the non-linear functions, enabling approximately optimal fusion of
                 non-linear models and measurements.</p>
+
+              <details style="margin-top: 16px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                <summary style="font-weight: 500;">Symbol legend</summary>
+                <div style="margin-top: 8px; line-height: 1.8; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px;">
+                  <span>$x$</span>
+                  <span>State vector $[x, y, \theta, v]^\mathsf{T}$</span>
+                  <span>$u$</span>
+                  <span>Control input $[\dot\theta, \dot v]^\mathsf{T}$</span>
+                  <span>$f$</span>
+                  <span>Non-linear motion model</span>
+                  <span>$h$</span>
+                  <span>Non-linear measurement model (range &amp; bearing)</span>
+                  <span>$F$</span>
+                  <span>Jacobian of $f$ w.r.t. state</span>
+                  <span>$H$</span>
+                  <span>Jacobian of $h$ w.r.t. state</span>
+                  <span>$P$</span>
+                  <span>State covariance matrix</span>
+                  <span>$Q$</span>
+                  <span>Process noise covariance (odometry uncertainty)</span>
+                  <span>$R$</span>
+                  <span>Measurement noise covariance (sensor uncertainty)</span>
+                  <span>$K$</span>
+                  <span>Kalman gain — weights prediction vs. measurement</span>
+                  <span>$I$</span>
+                  <span>Identity matrix</span>
+                  <span>$z$</span>
+                  <span>Measurement vector from sensor</span>
+                  <span>$\Delta t$</span>
+                  <span>Simulation timestep</span>
+                  <span>$l_x, l_y$</span>
+                  <span>Landmark position</span>
+                  <span>$d$</span>
+                  <span>Euclidean distance to landmark</span>
+                  <span>$\theta$</span>
+                  <span>Heading (yaw) angle</span>
+                  <span>$v$</span>
+                  <span>Linear velocity</span>
+                </div>
+              </details>
             </div>
           </details>
 
