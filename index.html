@@ -145,7 +145,8 @@
 
               <details style="margin-top: 16px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
                 <summary style="font-weight: 500;">Symbol legend</summary>
-                <div style="margin-top: 8px; line-height: 1.8; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px;">
+                <div
+                  style="margin-top: 8px; line-height: 1.8; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px;">
                   <span>$x$</span>
                   <span>State vector $[x, y, \theta, v]^\mathsf{T}$</span>
                   <span>$u$</span>
@@ -210,7 +211,9 @@
             <span>Stop on divergence on position</span>
           </label>
 
-          <button class="btn-start" id="btnReset" onclick="resetConfig()" style="margin-top: 4px; padding: 10px; font-size: 0.85rem; background: rgba(255,255,255,0.06); color: var(--text-secondary);">↺ Reset Configuration</button>
+          <button class="btn-start" id="btnReset" onclick="resetConfig()"
+            style="margin-top: 4px; padding: 10px; font-size: 0.85rem; background: rgba(255,255,255,0.06); color: var(--text-secondary);">↺
+            Reset Configuration</button>
 
           <details class="accordion-section" id="accSensors" open>
             <summary>Sensors Configuration</summary>
@@ -223,13 +226,16 @@
                     <span>Odometry</span>
                   </label>
                   <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0" max="100" step="0.1"
-                    value="1.0" title="Accuracy = sensor quality. Covariance Q ∝ 1/accuracy. Higher slider → lower Q → filter trusts odometry more.">
+                    value="1.0"
+                    title="Accuracy = sensor quality. Covariance Q ∝ 1/accuracy. Higher slider → lower Q → filter trusts odometry more.">
                   <span class="sensor-value" id="wheelOdometryValue">1.00</span>
-                  <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);" title="The slider sets accuracy. Internally Q (process noise) is scaled by 1/accuracy. At 0 → Q = ∞ (ignore odometry), at 100 → Q ≈ 0 (perfect odometry).">ⓘ</span>
+                  <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
+                    title="The slider sets accuracy. Internally Q (process noise) is scaled by 1/accuracy. At 0 → Q = ∞ (ignore odometry), at 100 → Q ≈ 0 (perfect odometry).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   <strong>Accuracy</strong> (slider value) → <strong>Q ∝ 1/accuracy</strong>. Higher = lower process
-                  covariance = filter trusts wheel encoders more. At 0, Q is infinite (filter ignores odometry); at 100, Q
+                  covariance = filter trusts wheel encoders more. At 0, Q is infinite (filter ignores odometry); at 100,
+                  Q
                   near zero (near-perfect odometry).
                 </div>
               </div>
@@ -240,10 +246,11 @@
                     <input type="checkbox" id="sensorLidar" checked>
                     <span>LIDAR</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="lidarAccuracy" min="0" max="100" step="0.1"
-                    value="1.0" title="Accuracy = sensor quality. Covariance R ∝ 1/accuracy. Higher slider → lower R → filter trusts LIDAR more.">
+                  <input type="range" class="sensor-slider" id="lidarAccuracy" min="0" max="100" step="0.1" value="1.0"
+                    title="Accuracy = sensor quality. Covariance R ∝ 1/accuracy. Higher slider → lower R → filter trusts LIDAR more.">
                   <span class="sensor-value" id="lidarValue">1.00</span>
-                  <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);" title="The slider sets accuracy. Internally R (measurement noise) is scaled by 1/accuracy. At 0 → R = ∞ (ignore LIDAR), at 100 → R ≈ 0 (perfect LIDAR).">ⓘ</span>
+                  <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
+                    title="The slider sets accuracy. Internally R (measurement noise) is scaled by 1/accuracy. At 0 → R = ∞ (ignore LIDAR), at 100 → R ≈ 0 (perfect LIDAR).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   <strong>Accuracy</strong> (slider value) → <strong>R ∝ 1/accuracy</strong>. Higher = lower measurement
@@ -267,10 +274,11 @@
                     <input type="checkbox" id="sensorGps">
                     <span>GPS</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="gpsAccuracy" min="0" max="100" step="0.1"
-                    value="1.0" title="Accuracy = sensor quality. Noise σ ∝ 1/accuracy. Higher slider → lower σ → filter trusts GPS more.">
+                  <input type="range" class="sensor-slider" id="gpsAccuracy" min="0" max="100" step="0.1" value="1.0"
+                    title="Accuracy = sensor quality. Noise σ ∝ 1/accuracy. Higher slider → lower σ → filter trusts GPS more.">
                   <span class="sensor-value" id="gpsValue">1.00</span>
-                  <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);" title="The slider sets accuracy. Internally GPS noise std dev is 1/accuracy. At 0 → noise = ∞ (ignore GPS), at 100 → noise ≈ 0 (perfect fixes).">ⓘ</span>
+                  <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
+                    title="The slider sets accuracy. Internally GPS noise std dev is 1/accuracy. At 0 → noise = ∞ (ignore GPS), at 100 → noise ≈ 0 (perfect fixes).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   <strong>Accuracy</strong> (slider value) → <strong>noise σ ∝ 1/accuracy</strong>. Higher = lower
@@ -286,7 +294,6 @@
           <summary>Route Configuration</summary>
           <div class="accordion-content" style="padding: 12px 16px;">
             <div>
-              <h2>Route Configuration</h2>
               <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
                 Drag the <strong style="color: var(--success);">A</strong> and <strong
                   style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
@@ -311,7 +318,6 @@
         <details class="accordion-section" open>
           <summary>Live Metrics</summary>
           <div class="accordion-content" style="padding: 12px 16px;">
-            <h2>Live Metrics</h2>
             <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
               <strong>Status</strong> shows the simulation state. <br>
               <strong>Uncertainty</strong> is the trace of the
