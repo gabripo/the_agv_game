@@ -78,7 +78,7 @@ async function run() {
     const d = img.data;
     let sum = 0;
     for (let i = 0; i < d.length; i += 4) {
-      sum += d[i] + d[i+1] + d[i+2];
+      sum += d[i] + d[i + 1] + d[i + 2];
     }
     return sum > 0;
   });
@@ -122,7 +122,7 @@ async function run() {
   console.log(`Start button: disabled=${btnState.disabled}, text="${btnState.text.trim()}"`);
 
   // Try to click the start button
-  console.log('Clicking DEPLOY AGV button...');
+  console.log('Clicking RUN SIMULATION button...');
   const clickResult = await page.evaluate(() => {
     try {
       const btn = document.getElementById('btnStart');

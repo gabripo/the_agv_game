@@ -49,9 +49,9 @@ class EKFSlam {
     const theta = s[2][0], v = s[3][0];
     return math.matrix([
       [1, 0, -v * Math.sin(theta) * dt, Math.cos(theta) * dt],
-      [0, 1,  v * Math.cos(theta) * dt, Math.sin(theta) * dt],
-      [0, 0,  1,                        0                    ],
-      [0, 0,  0,                        1                    ]
+      [0, 1, v * Math.cos(theta) * dt, Math.sin(theta) * dt],
+      [0, 0, 1, 0],
+      [0, 0, 0, 1]
     ]);
   }
 
@@ -84,8 +84,8 @@ class EKFSlam {
     const range = Math.sqrt(dx * dx + dy * dy);
     if (range < 0.001) return math.zeros([2, 4]);
     return math.matrix([
-      [-dx / range, -dy / range,  0, 0],
-      [ dy / (range * range), -dx / (range * range), -1, 0]
+      [-dx / range, -dy / range, 0, 0],
+      [dy / (range * range), -dx / (range * range), -1, 0]
     ]);
   }
 
@@ -234,8 +234,8 @@ let userCorridorEnd = CORRIDOR_T_END;
 function cubicBezier(p0, p1, p2, p3, t) {
   const u = 1 - t;
   return {
-    x: u*u*u*p0.x + 3*u*u*t*p1.x + 3*u*t*t*p2.x + t*t*t*p3.x,
-    y: u*u*u*p0.y + 3*u*u*t*p1.y + 3*u*t*t*p2.y + t*t*t*p3.y
+    x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
+    y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y
   };
 }
 
@@ -660,21 +660,21 @@ function draw() {
 
   // External sensor updates (position beacons)
   if (sensorLidarEnabled && !isInCorridor(simTime)) {
-  for (const s of externalSensors) {
-    const dx = trueSt.x - s.x;
-    const dy = trueSt.y - s.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < lidarRange) {
-      const noise = 1.0 / Math.max(s.accuracy, 0.01);
-      const meas = [
-        trueSt.x + (Math.random() - 0.5) * noise * 4,
-        trueSt.y + (Math.random() - 0.5) * noise * 4,
-        noise * 2,
-        noise * 2
-      ];
-      ekf.gpsUpdate(meas);
+    for (const s of externalSensors) {
+      const dx = trueSt.x - s.x;
+      const dy = trueSt.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < lidarRange) {
+        const noise = 1.0 / Math.max(s.accuracy, 0.01);
+        const meas = [
+          trueSt.x + (Math.random() - 0.5) * noise * 4,
+          trueSt.y + (Math.random() - 0.5) * noise * 4,
+          noise * 2,
+          noise * 2
+        ];
+        ekf.gpsUpdate(meas);
+      }
     }
-  }
   }
 
   // Compute divergence
@@ -699,7 +699,7 @@ function draw() {
 
   // Lost estimate check (EKF diverged off-canvas)
   if (ekf.getX() < -50 || ekf.getX() > width + 50 ||
-      ekf.getY() < -50 || ekf.getY() > height + 50) {
+    ekf.getY() < -50 || ekf.getY() > height + 50) {
     gameOver('lost');
     return;
   }
@@ -767,7 +767,7 @@ function drawRacks() {
   }
 }
 
-function drawLandmarks() {}
+function drawLandmarks() { }
 
 function drawStartEnd() {
   const sx = startPoint.x, sy = startPoint.y;
@@ -1080,13 +1080,13 @@ function drawEKFEstimate() {
     stroke(52, 152, 219, 50);
     strokeWeight(2);
     arc(x, y, lidarRange * 2, lidarRange * 2,
-        sweepAngle - 0.3, sweepAngle + 0.3);
+      sweepAngle - 0.3, sweepAngle + 0.3);
 
     stroke(52, 152, 219, 80);
     strokeWeight(1);
     line(x, y,
-         x + Math.cos(sweepAngle) * lidarRange,
-         y + Math.sin(sweepAngle) * lidarRange);
+      x + Math.cos(sweepAngle) * lidarRange,
+      y + Math.sin(sweepAngle) * lidarRange);
   }
 
   // Sensor status indicators (drawn in world coords)
@@ -1179,7 +1179,7 @@ function drawIdlePrompt() {
   textAlign(CENTER, CENTER);
   textSize(16);
   textFont('sans-serif');
-  text('Tune the sliders →\nthen press DEPLOY AGV', width / 2, height / 2);
+  text('Tune the sliders →\nthen press RUN SIMULATION', width / 2, height / 2);
   textFont('sans-serif');
 }
 
@@ -1195,9 +1195,9 @@ function checkCollision() {
   const margin = ROBOT_RADIUS;
   for (const rack of racks) {
     if (x + margin > rack.x - rack.w / 2 &&
-        x - margin < rack.x + rack.w / 2 &&
-        y + margin > rack.y - rack.h / 2 &&
-        y - margin < rack.y + rack.h / 2) {
+      x - margin < rack.x + rack.w / 2 &&
+      y + margin > rack.y - rack.h / 2 &&
+      y - margin < rack.y + rack.h / 2) {
       return true;
     }
   }
@@ -1376,7 +1376,7 @@ function resetSimulation() {
   initSimulation();
 
   document.getElementById('btnStart').disabled = false;
-  document.getElementById('btnStart').textContent = '▶ DEPLOY AGV';
+  document.getElementById('btnStart').textContent = '▶ RUN SIMULATION';
   document.getElementById('btnStart').className = 'btn-start ready';
   document.getElementById('app').classList.remove('locked');
 }
@@ -1385,83 +1385,83 @@ function resetSimulation() {
 // UI EVENT BINDING (browser only)
 // ============================================================
 if (typeof document !== 'undefined') {
-document.addEventListener('DOMContentLoaded', function () {
-  const speedEl = document.getElementById('agvSpeed');
-  if (speedEl) agvSpeed = parseFloat(speedEl.value);
-  const rangeEl = document.getElementById('lidarRange');
-  if (rangeEl) lidarRange = parseFloat(rangeEl.value);
-  function setupSensorListener(name) {
-    const accId = name + 'Accuracy';
-    const valId = name + 'Value';
-    const el = document.getElementById(accId);
-    if (!el) return;
-    el.addEventListener('input', function () {
-      const valEl = document.getElementById(valId);
-      if (valEl) valEl.textContent = parseFloat(this.value).toFixed(2);
-      if (!running) {
-        updateSensorTuning();
-        updateMetrics();
-      }
-    });
-    const toggleId = 'sensor' + name.charAt(0).toUpperCase() + name.slice(1);
-    const toggleEl = document.getElementById(toggleId);
-    if (toggleEl) {
-      toggleEl.addEventListener('change', function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    const speedEl = document.getElementById('agvSpeed');
+    if (speedEl) agvSpeed = parseFloat(speedEl.value);
+    const rangeEl = document.getElementById('lidarRange');
+    if (rangeEl) lidarRange = parseFloat(rangeEl.value);
+    function setupSensorListener(name) {
+      const accId = name + 'Accuracy';
+      const valId = name + 'Value';
+      const el = document.getElementById(accId);
+      if (!el) return;
+      el.addEventListener('input', function () {
+        const valEl = document.getElementById(valId);
+        if (valEl) valEl.textContent = parseFloat(this.value).toFixed(2);
         if (!running) {
           updateSensorTuning();
           updateMetrics();
         }
       });
-    }
-  }
-  setupSensorListener('wheelOdometry');
-  setupSensorListener('lidar');
-  setupSensorListener('gps');
-
-  document.getElementById('agvSpeed').addEventListener('input', function () {
-    agvSpeed = parseFloat(this.value);
-    document.getElementById('speedValue').textContent = agvSpeed.toFixed(1);
-    if (!running) {
-      buildTrajectory();
-    }
-  });
-
-  document.getElementById('lidarRange').addEventListener('input', function () {
-    lidarRange = parseFloat(this.value);
-    document.getElementById('lidarRangeValue').textContent = lidarRange;
-  });
-
-  document.getElementById('btnAddBeacon').addEventListener('click', function () {
-    if (running || completed || crashed) return;
-    placingSensor = !placingSensor;
-    this.textContent = placingSensor ? 'Click map to place...' : '+ Add Beacon';
-  });
-  renderExternalSensorList();
-
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-      if (running) return;
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      slipMode = this.dataset.mode;
-      const params = document.getElementById('corridorParams');
-      if (params) {
-        params.classList.toggle('show', slipMode === 'deterministic');
+      const toggleId = 'sensor' + name.charAt(0).toUpperCase() + name.slice(1);
+      const toggleEl = document.getElementById(toggleId);
+      if (toggleEl) {
+        toggleEl.addEventListener('change', function () {
+          if (!running) {
+            updateSensorTuning();
+            updateMetrics();
+          }
+        });
       }
-      computeSlipParams();
-    });
-  });
+    }
+    setupSensorListener('wheelOdometry');
+    setupSensorListener('lidar');
+    setupSensorListener('gps');
 
-  if (typeof renderMathInElement === 'function') {
-    renderMathInElement(document.body, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '$', right: '$', display: false }
-      ],
-      throwOnError: false
+    document.getElementById('agvSpeed').addEventListener('input', function () {
+      agvSpeed = parseFloat(this.value);
+      document.getElementById('speedValue').textContent = agvSpeed.toFixed(1);
+      if (!running) {
+        buildTrajectory();
+      }
     });
-  }
-});
+
+    document.getElementById('lidarRange').addEventListener('input', function () {
+      lidarRange = parseFloat(this.value);
+      document.getElementById('lidarRangeValue').textContent = lidarRange;
+    });
+
+    document.getElementById('btnAddBeacon').addEventListener('click', function () {
+      if (running || completed || crashed) return;
+      placingSensor = !placingSensor;
+      this.textContent = placingSensor ? 'Click map to place...' : '+ Add Beacon';
+    });
+    renderExternalSensorList();
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        if (running) return;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        slipMode = this.dataset.mode;
+        const params = document.getElementById('corridorParams');
+        if (params) {
+          params.classList.toggle('show', slipMode === 'deterministic');
+        }
+        computeSlipParams();
+      });
+    });
+
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false }
+        ],
+        throwOnError: false
+      });
+    }
+  });
 }
 
 // ============================================================

@@ -19,7 +19,7 @@ A single-page portfolio piece demonstrating deep understanding of Extended Kalma
 ## User Interaction Decisions
 
 ### Start Button (not auto-run)
-*User tunes sensors first, then presses "Deploy AGV" to start.*
+*User tunes sensors first, then presses "RUN SIMULATION" to start.*
 
 - **Why:** Forces deliberate configuration before the run. Mimics real-world workflow: configure → deploy → observe.
 - **Portfolio narrative:** "Demonstrates that I understand state estimation tuning happens *before* deployment, not reactively."

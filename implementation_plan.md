@@ -141,7 +141,7 @@ function draw() {
 - Locked after START is pressed
 
 #### Step 11 — START button
-- Label: "▶ DEPLOY AGV"
+- Label: "▶ RUN SIMULATION"
 - Disabled until at least one run-through of sliders (both sliders moved once)
 - On click:
   - Lock sliders + mode selector (visual lock overlay)

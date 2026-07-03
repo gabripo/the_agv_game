@@ -6,7 +6,7 @@
 ┌─────────────────────────────────┬──────────────────────────────┐
 │   Left Column (3fr)            │ Right Column: Dashboard (2fr) │
 │  ┌───────────────────────────┐ │ ┌──────────────────────────┐ │
-│  │  p5.js Canvas             │ │ │  DEPLOY AGV Button       │ │
+│  │  p5.js Canvas             │ │ │  RUN SIMULATION Button       │ │
 │  │  (warehouse + AGV sim)    │ │ │  AGV Speed Slider        │ │
 │  │                           │ │ │  Stop on Divergence Tog  │ │
 │  ├───────────────────────────┤ │ │  ▲ Sensors Config (det)  │ │
@@ -320,7 +320,7 @@ Run via `npm run test:headless` using Playwright + Firefox. Validates the full a
 | Page load | Canvas exists, visible, and has rendered content |
 | p5.js init | `setup()` and `draw()` are defined globally |
 | UI state | Slider defaults correct, mode selector active, start button enabled |
-| Click "DEPLOY AGV" | `running` flips to `true`, button text updates, simTime advances |
+| Click "RUN SIMULATION" | `running` flips to `true`, button text updates, simTime advances |
 | Mid-simulation | EKF state coordinates are non-zero and plausible |
 | Route completion | `completed = true`, `crashed = false`, no JS errors throughout |
 
@@ -373,7 +373,7 @@ The e2e test (`tests/headless_test.js`) uses **Playwright** with **Firefox** in 
 | p5.js initialised | `typeof setup === 'function' && typeof draw === 'function'` |
 | Slider defaults | Q=1.0 and R=1.0 at initial state |
 | Mode selector | Deterministic mode is active by default |
-| Start button | Enabled, labeled "▶ DEPLOY AGV" |
+| Start button | Enabled, labeled "▶ RUN SIMULATION" |
 | Click triggers run | After clicking, `running = true`, `simTime` advances |
 | Simulation progresses | EKF state (`ekf.getX()`, `ekf.getY()`) updates with non-zero coordinates |
 | Route completion | Simulation reaches `t = TOTAL_TIME` with `completed = true` and no crashes |

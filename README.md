@@ -66,11 +66,11 @@ Opens at [http://localhost:8080](http://localhost:8080).
 ## Usage
 
 1. **Configure sensors** — Toggle wheel odometry, LIDAR, GPS, and beacons on/off. Adjust per-sensor accuracy (higher = more accurate = lower noise) and LIDAR detection range.
-2. **Set AGV speed** — Slider below DEPLOY AGV controls how fast the AGV traverses the path. Higher speed = fewer frames in the corridor = harder to navigate.
+2. **Set AGV speed** — Slider below RUN SIMULATION controls how fast the AGV traverses the path. Higher speed = fewer frames in the corridor = harder to navigate.
 3. **Select slip mode** — Deterministic (fixed timing) or Semi-Random (variable timing within corridor zone).
 4. **(Optional) Toggle "Stop on divergence"** — When checked, the simulation stops if the EKF estimate drifts >60px from the true position. Uncheck to let the run continue (collision/off-canvas stops still apply).
 5. **Add/remove map beacons** — Click "+ Add Beacon" then click the map to place GPS-style position beacons. Drag to reposition. Remove with the × button.
-6. **Press "DEPLOY AGV"** — The simulation starts. Watch the EKF estimate (solid blue) track the true position (ghost grey) using noisy sensor measurements (red dots). Beacons within LIDAR range glow green.
+6. **Press "RUN SIMULATION"** — The simulation starts. Watch the EKF estimate (solid blue) track the true position (ghost grey) using noisy sensor measurements (red dots). Beacons within LIDAR range glow green.
 7. **Observe the corridor** — Halfway through, all exterior measurements stop (LIDAR, GPS, beacons). The control input is corrupted (wheel slip). The EKF must rely on its tuning and odometry to survive.
 8. **Win or crash** — A well-tuned filter recovers after the corridor. A poorly-tuned filter diverges: the simulation stops with a **Diverged** or **Collision** message below the map.
 9. **Review** — The full EKF and true path remains visible. Result panel and explanatory accordion are shown below the canvas.
@@ -89,7 +89,7 @@ Opens at [http://localhost:8080](http://localhost:8080).
 
 | Control | Location | Description |
 |---------|----------|-------------|
-| **AGV Speed** | Below DEPLOY AGV button | Traversal speed (0.5–5.0). Scales `simTime` advance rate. Higher = faster = fewer frames in corridor. |
+| **AGV Speed** | Below RUN SIMULATION button | Traversal speed (0.5–5.0). Scales `simTime` advance rate. Higher = faster = fewer frames in corridor. |
 | **Stop on divergence** | Below speed slider | When checked, stops simulation if EKF estimate >60px from true position. |
 | **Wheel Odometry** | Sensors Configuration > Interior | Toggle on/off. Accuracy slider (0.1–5.0) scales process noise Q. |
 | **LIDAR** | Sensors Configuration > Exterior | Toggle on/off. Accuracy slider scales measurement noise R. Range slider (100–600px) controls detection radius. |
@@ -147,7 +147,7 @@ Requires [Playwright](https://playwright.dev/) with Firefox. Spawns a headless F
 - Canvas renders with visible content
 - p5.js `setup()` and `draw()` are defined and execute
 - Slider controls have expected default values
-- "DEPLOY AGV" button starts the simulation
+- "RUN SIMULATION" button starts the simulation
 - The simulation advances time and the EKF state updates
 - Route completes without JavaScript errors
 
