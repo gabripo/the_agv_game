@@ -94,13 +94,14 @@ async function run() {
   });
   console.log(`Canvas dimensions: ${idleText}`);
 
-  // Check slider values
-  const sliderValues = await page.evaluate(() => {
-    const q = document.getElementById('qSlider')?.value;
-    const r = document.getElementById('rSlider')?.value;
-    return { q, r };
+  // Check sensor values
+  const sensorValues = await page.evaluate(() => {
+    const w = document.getElementById('wheelOdometryAccuracy')?.value;
+    const l = document.getElementById('lidarAccuracy')?.value;
+    const g = document.getElementById('gpsAccuracy')?.value;
+    return { wheel: w, lidar: l, gps: g };
   });
-  console.log(`Slider values: Q=${sliderValues.q}, R=${sliderValues.r}`);
+  console.log(`Sensor accuracies: Wheel=${sensorValues.wheel}, LIDAR=${sensorValues.lidar}, GPS=${sensorValues.gps}`);
 
   // Check mode selector
   const activeMode = await page.evaluate(() => {

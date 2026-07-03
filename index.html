@@ -488,13 +488,46 @@
       body { padding: 12px; }
     }
 
+    /* ===== SENSOR TOGGLES ===== */
+    .sensor-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .sensor-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+    .sensor-toggle input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .sensor-hint {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+    .sensor-row + .sensor-hint + input[type="range"] {
+      margin-bottom: 4px;
+    }
+
     /* ===== LOCKED STATE ===== */
     .locked .mode-btn {
       opacity: 0.4;
       cursor: not-allowed;
     }
     .locked input[type="range"],
-    .locked input[type="number"] {
+    .locked input[type="number"],
+    .locked .sensor-toggle input[type="checkbox"] {
       opacity: 0.5;
       pointer-events: none;
     }
@@ -554,27 +587,44 @@
       <div class="card">
         <div class="dashboard-scroll">
 
-          <!-- SLIDERS -->
+          <!-- CONFIGURE AGV -->
           <div>
-            <h2>EKF Tuning</h2>
-
-            <div class="slider-group">
-              <label>
-                <span>Process Noise (Q) — Trust Odometry</span>
-                <span class="value" id="qValue">1.00</span>
+            <h2>Configure AGV</h2>
+            <div class="sensor-row">
+              <label class="sensor-toggle">
+                <input type="checkbox" id="sensorWheelOdometry" checked>
+                <span>Wheel Odometry</span>
               </label>
-              <div class="slider-hint">Low = robot trusts its wheel encoders. Risky on slippery floors.</div>
-              <input type="range" id="qSlider" min="0.01" max="5.0" step="0.01" value="1.0">
+              <span class="value" id="wheelOdometryValue">1.00</span>
             </div>
+            <div class="sensor-hint">Measures wheel rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.</div>
+            <input type="range" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+          </div>
 
-            <div class="slider-group" style="margin-top: 12px;">
-              <label>
-                <span>Measurement Noise (R) — Trust Sensors</span>
-                <span class="value" id="rValue">1.00</span>
+          <div class="section-divider"></div>
+
+          <!-- SENSORS -->
+          <div>
+            <h2>Sensors</h2>
+            <div class="sensor-row">
+              <label class="sensor-toggle">
+                <input type="checkbox" id="sensorLidar" checked>
+                <span>LIDAR</span>
               </label>
-              <div class="slider-hint">Low = robot trusts landmark detections. Problems in featureless areas.</div>
-              <input type="range" id="rSlider" min="0.01" max="5.0" step="0.01" value="1.0">
+              <span class="value" id="lidarValue">1.00</span>
             </div>
+            <div class="sensor-hint">Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.</div>
+            <input type="range" id="lidarAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+
+            <div class="sensor-row" style="margin-top: 12px;">
+              <label class="sensor-toggle">
+                <input type="checkbox" id="sensorGps">
+                <span>GPS</span>
+              </label>
+              <span class="value" id="gpsValue">1.00</span>
+            </div>
+            <div class="sensor-hint">Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.</div>
+            <input type="range" id="gpsAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
           </div>
 
           <div class="section-divider"></div>

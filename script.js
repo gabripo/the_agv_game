@@ -115,6 +115,27 @@ class EKFSlam {
     this.P = math.multiply(math.add(this.P, Pt), 0.5);
   }
 
+  gpsUpdate(measurement) {
+    const mx = measurement[0], my = measurement[1];
+    const rX = measurement[2] || 1.0, rY = measurement[3] || 1.0;
+
+    const H = math.matrix([[1, 0, 0, 0], [0, 1, 0, 0]]);
+    const Rg = math.diag([rX, rY]);
+    const z = math.matrix([[mx], [my]]);
+    const h = math.matrix([[this.getX()], [this.getY()]]);
+
+    const HT = math.transpose(H);
+    const PHT = math.multiply(this.P, HT);
+    const S = math.add(math.multiply(H, PHT), Rg);
+    const K = math.multiply(PHT, math.inv(S));
+
+    this.state = math.add(this.state, math.multiply(K, math.subtract(z, h)));
+    const KH = math.multiply(K, H);
+    this.P = math.multiply(math.subtract(this.I, KH), this.P);
+    const Pt = math.transpose(this.P);
+    this.P = math.multiply(math.add(this.P, Pt), 0.5);
+  }
+
   getPositionUncertainty() {
     const p = this.P.valueOf();
     return p[0][0] + p[1][1];
@@ -167,6 +188,28 @@ const ROBOT_RADIUS = 16;
 const MAX_SENSOR_RANGE = 400;
 const LIDAR_COST = 5000;
 const MAX_SAVINGS_SIGMA = 3.0;
+
+let sensorWheelEnabled = true;
+let sensorWheelAccuracy = 1.0;
+let sensorLidarEnabled = true;
+let sensorLidarAccuracy = 1.0;
+let sensorGpsEnabled = false;
+let sensorGpsAccuracy = 1.0;
+
+function updateSensorTuning() {
+  sensorWheelAccuracy = parseFloat(document.getElementById('wheelOdometryAccuracy').value) || 1.0;
+  sensorLidarAccuracy = parseFloat(document.getElementById('lidarAccuracy').value) || 1.0;
+  sensorGpsAccuracy = parseFloat(document.getElementById('gpsAccuracy').value) || 1.0;
+  sensorWheelEnabled = document.getElementById('sensorWheelOdometry').checked;
+  sensorLidarEnabled = document.getElementById('sensorLidar').checked;
+  sensorGpsEnabled = document.getElementById('sensorGps').checked;
+
+  const wheelScale = sensorWheelEnabled ? (1.0 / Math.max(sensorWheelAccuracy, 0.01)) : 50;
+  const lidarScale = sensorLidarEnabled ? (1.0 / Math.max(sensorLidarAccuracy, 0.01)) : 100;
+
+  ekf.Q = math.multiply(ekf.defaultQ, wheelScale);
+  ekf.R = math.multiply(ekf.defaultR, lidarScale);
+}
 
 let slipMode = 'deterministic';
 let slipOffset = 0;
@@ -403,6 +446,7 @@ function initSimulation() {
   maxDivergence = 0;
   currentSavings = 0;
   computeSlipParams();
+  updateSensorTuning();
   updateSliderDisplay();
   updateMetrics();
 
@@ -428,6 +472,7 @@ function getNearestTrajectoryIndex(mx, my) {
 
 function mousePressed() {
   if (running || completed || crashed) return;
+
   const dStart = Math.hypot(mouseX - startPoint.x, mouseY - startPoint.y);
   const dEnd = Math.hypot(mouseX - endPoint.x, mouseY - endPoint.y);
   if (dStart < 24) {
@@ -437,6 +482,20 @@ function mousePressed() {
   if (dEnd < 24) {
     dragTarget = 'end';
     return false;
+  }
+
+  // Clicking on the AGV toggles LIDAR
+  if (dStart >= 24 && dEnd >= 24) {
+    const agvDist = Math.hypot(mouseX - ekf.getX(), mouseY - ekf.getY());
+    if (agvDist < ROBOT_RADIUS * 2) {
+      const toggle = document.getElementById('sensorLidar');
+      if (toggle) {
+        toggle.checked = !toggle.checked;
+        updateSensorTuning();
+        updateMetrics();
+      }
+      return false;
+    }
   }
   if (slipMode === 'deterministic' && trajectory.length) {
     const sIdx = Math.min(Math.floor(slipStartTime), trajectory.length - 1);
@@ -531,20 +590,37 @@ function draw() {
   // EKF predict
   ekf.predict(control, DT);
 
-  // Get visible landmarks & update
-  const visible = getVisibleLandmarks(trueSt);
-  const nearestLm = getNearestLandmark(trueSt, visible);
-
-  if (nearestLm) {
-    const meas = noisyMeasurement(trueSt, nearestLm);
-    ekf.update(meas, nearestLm);
-    lastMeasurement = meas;
-    lastLandmark = nearestLm;
-    lastMeasPos = measurementToPosition(meas, nearestLm);
+  // Get visible landmarks & update (LIDAR)
+  if (sensorLidarEnabled) {
+    const visible = getVisibleLandmarks(trueSt);
+    const nearestLm = getNearestLandmark(trueSt, visible);
+    if (nearestLm) {
+      const meas = noisyMeasurement(trueSt, nearestLm);
+      ekf.update(meas, nearestLm);
+      lastMeasurement = meas;
+      lastLandmark = nearestLm;
+      lastMeasPos = measurementToPosition(meas, nearestLm);
+    } else {
+      lastMeasurement = null;
+      lastLandmark = null;
+      lastMeasPos = null;
+    }
   } else {
     lastMeasurement = null;
     lastLandmark = null;
     lastMeasPos = null;
+  }
+
+  // GPS update
+  if (sensorGpsEnabled) {
+    const gpsNoise = 1.0 / Math.max(sensorGpsAccuracy, 0.01);
+    const gpsMeas = [
+      trueSt.x + (Math.random() - 0.5) * gpsNoise * 4,
+      trueSt.y + (Math.random() - 0.5) * gpsNoise * 4,
+      gpsNoise * 2,
+      gpsNoise * 2
+    ];
+    ekf.gpsUpdate(gpsMeas);
   }
 
   // Compute divergence
@@ -893,7 +969,30 @@ function drawEKFEstimate() {
   textAlign(CENTER, CENTER);
   textSize(8);
   text('EKF', 0, -16);
+
   pop();
+
+  // Sensor status indicators (drawn in world coords)
+  noStroke();
+  textAlign(LEFT, CENTER);
+  textSize(8);
+
+  let statusX = x + 22;
+  let statusY = y - 14;
+  if (sensorLidarEnabled) {
+    fill(52, 152, 219, 180);
+    text('\u25B3', statusX, statusY);
+    statusX += 12;
+  }
+  if (sensorGpsEnabled) {
+    fill(46, 204, 113, 180);
+    text('\u25C9', statusX, statusY);
+    statusX += 12;
+  }
+  if (sensorWheelEnabled) {
+    fill(155, 89, 182, 180);
+    text('\u25A0', statusX, statusY);
+  }
 }
 
 function drawTruePath() {
@@ -1097,8 +1196,11 @@ function updateMetrics() {
 }
 
 function updateSliderDisplay() {
-  document.getElementById('qValue').textContent = parseFloat(document.getElementById('qSlider').value).toFixed(2);
-  document.getElementById('rValue').textContent = parseFloat(document.getElementById('rSlider').value).toFixed(2);
+  ['wheelOdometry', 'lidar', 'gps'].forEach(name => {
+    const el = document.getElementById(name + 'Accuracy');
+    const valEl = document.getElementById(name + 'Value');
+    if (el && valEl) valEl.textContent = parseFloat(el.value).toFixed(2);
+  });
 }
 
 // ============================================================
@@ -1108,10 +1210,7 @@ function startSimulation() {
   if (running || completed || crashed) return;
   running = true;
   computeSlipParams();
-
-  const qVal = parseFloat(document.getElementById('qSlider').value);
-  const rVal = parseFloat(document.getElementById('rSlider').value);
-  ekf.setTuning(qVal, rVal);
+  updateSensorTuning();
 
   document.getElementById('btnStart').disabled = true;
   document.getElementById('btnStart').textContent = '▶ RUNNING...';
@@ -1137,21 +1236,33 @@ function resetSimulation() {
 // ============================================================
 if (typeof document !== 'undefined') {
 document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('qSlider').addEventListener('input', function () {
-    document.getElementById('qValue').textContent = parseFloat(this.value).toFixed(2);
-    if (!running) {
-      ekf.setTuning(parseFloat(this.value), parseFloat(document.getElementById('rSlider').value));
-      updateMetrics();
+  function setupSensorListener(name) {
+    const accId = name + 'Accuracy';
+    const valId = name + 'Value';
+    const el = document.getElementById(accId);
+    if (!el) return;
+    el.addEventListener('input', function () {
+      const valEl = document.getElementById(valId);
+      if (valEl) valEl.textContent = parseFloat(this.value).toFixed(2);
+      if (!running) {
+        updateSensorTuning();
+        updateMetrics();
+      }
+    });
+    const toggleId = 'sensor' + name.charAt(0).toUpperCase() + name.slice(1);
+    const toggleEl = document.getElementById(toggleId);
+    if (toggleEl) {
+      toggleEl.addEventListener('change', function () {
+        if (!running) {
+          updateSensorTuning();
+          updateMetrics();
+        }
+      });
     }
-  });
-
-  document.getElementById('rSlider').addEventListener('input', function () {
-    document.getElementById('rValue').textContent = parseFloat(this.value).toFixed(2);
-    if (!running) {
-      ekf.setTuning(parseFloat(document.getElementById('qSlider').value), parseFloat(this.value));
-      updateMetrics();
-    }
-  });
+  }
+  setupSensorListener('wheelOdometry');
+  setupSensorListener('lidar');
+  setupSensorListener('gps');
 
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', function () {
