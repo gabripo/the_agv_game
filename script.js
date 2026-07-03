@@ -1339,6 +1339,11 @@ function gameOver(reason) {
   crashed = true;
   running = false;
 
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStart').textContent = '▶ RUN SIMULATION';
+  document.getElementById('btnStart').className = 'btn-start ready';
+  document.getElementById('app').classList.remove('locked');
+
   const container = document.getElementById('canvasContainer');
   container.classList.add('shake');
   setTimeout(() => container.classList.remove('shake'), 500);
@@ -1352,13 +1357,11 @@ function gameOver(reason) {
   if (reason === 'collision') {
     content.innerHTML =
       '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ COLLISION DETECTED</h2>' +
-      '<p style="color: var(--text-secondary); margin-bottom: 16px;">The EKF estimate drifted into warehouse racking. Try increasing Q (trust odometry less) or reducing R (trust sensors more).</p>' +
-      '<button class="btn-restart" onclick="resetSimulation()" style="padding: 10px 28px; border: 2px solid var(--accent); border-radius: 8px; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer;">TUNE AGAIN</button>';
+      '<p style="color: var(--text-secondary);">The EKF estimate drifted into warehouse racking. Try increasing Q (trust odometry less) or reducing R (trust sensors more).</p>';
   } else {
     content.innerHTML =
       '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ ESTIMATE DIVERGED</h2>' +
-      '<p style="color: var(--text-secondary); margin-bottom: 16px;">The estimated state diverged from the true position. Review your Q/R tuning.</p>' +
-      '<button class="btn-restart" onclick="resetSimulation()" style="padding: 10px 28px; border: 2px solid var(--accent); border-radius: 8px; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer;">TUNE AGAIN</button>';
+      '<p style="color: var(--text-secondary);">The estimated state diverged from the true position. Review your Q/R tuning.</p>';
   }
   panel.style.display = 'block';
   updateMetrics();
@@ -1367,16 +1370,20 @@ function gameOver(reason) {
 function routeComplete() {
   completed = true;
   running = false;
+
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStart').textContent = '▶ RUN SIMULATION';
+  document.getElementById('btnStart').className = 'btn-start ready';
+  document.getElementById('app').classList.remove('locked');
   const panel = document.getElementById('resultPanel');
   const content = document.getElementById('resultContent');
   content.innerHTML =
     '<h2 style="color: var(--success); margin-bottom: 8px;">✓ ROUTE COMPLETE</h2>' +
-    '<p style="color: var(--text-secondary); margin-bottom: 16px;">' +
+    '<p style="color: var(--text-secondary);">' +
     `Max divergence: ${(maxDivergence).toFixed(1)}px  ·  ` +
     `Sensor savings: ${(currentSavings * 100).toFixed(0)}%  ·  ` +
     `Final uncertainty: ${currentUncertainty.toFixed(3)}` +
-    '</p>' +
-    '<button class="btn-restart" onclick="resetSimulation()" style="padding: 10px 28px; border: 2px solid var(--accent); border-radius: 8px; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer;">TUNE AGAIN</button>';
+    '</p>';
   panel.style.display = 'block';
   updateMetrics();
 }
@@ -1484,7 +1491,11 @@ function updateSliderDisplay() {
 // START / RESET
 // ============================================================
 function startSimulation() {
-  if (running || completed || crashed) return;
+  if (running) return;
+  if (completed || crashed) {
+    resetSimulation();
+    // fall through to start after reset
+  }
   running = true;
   computeSlipParams();
   updateSensorTuning();
