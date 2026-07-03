@@ -453,9 +453,7 @@ function initSimulation() {
   updateSliderDisplay();
   updateMetrics();
 
-  document.getElementById('overlaySuccess').classList.remove('active');
-  document.getElementById('overlayFail').classList.remove('active');
-  document.getElementById('overlayCollision').classList.remove('active');
+  document.getElementById('resultPanel').style.display = 'none';
   document.getElementById('flashRed').classList.remove('show');
 }
 
@@ -1212,21 +1210,37 @@ function gameOver(reason) {
   flash.classList.add('show');
   setTimeout(() => flash.classList.remove('show'), 800);
 
-  const overlay = document.getElementById(
-    reason === 'collision' ? 'overlayCollision' : 'overlayFail'
-  );
-  overlay.classList.add('active');
+  const panel = document.getElementById('resultPanel');
+  const content = document.getElementById('resultContent');
+  if (reason === 'collision') {
+    content.innerHTML =
+      '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ COLLISION DETECTED</h2>' +
+      '<p style="color: var(--text-secondary); margin-bottom: 16px;">The EKF estimate drifted into warehouse racking. Try increasing Q (trust odometry less) or reducing R (trust sensors more).</p>' +
+      '<button class="btn-restart" onclick="resetSimulation()" style="padding: 10px 28px; border: 2px solid var(--accent); border-radius: 8px; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer;">TUNE AGAIN</button>';
+  } else {
+    content.innerHTML =
+      '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ ESTIMATE DIVERGED</h2>' +
+      '<p style="color: var(--text-secondary); margin-bottom: 16px;">The estimated state diverged from the true position. Review your Q/R tuning.</p>' +
+      '<button class="btn-restart" onclick="resetSimulation()" style="padding: 10px 28px; border: 2px solid var(--accent); border-radius: 8px; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer;">TUNE AGAIN</button>';
+  }
+  panel.style.display = 'block';
   updateMetrics();
 }
 
 function routeComplete() {
   completed = true;
   running = false;
-  document.getElementById('overlaySuccess').classList.add('active');
-  document.getElementById('successMetrics').textContent =
+  const panel = document.getElementById('resultPanel');
+  const content = document.getElementById('resultContent');
+  content.innerHTML =
+    '<h2 style="color: var(--success); margin-bottom: 8px;">✓ ROUTE COMPLETE</h2>' +
+    '<p style="color: var(--text-secondary); margin-bottom: 16px;">' +
     `Max divergence: ${(maxDivergence).toFixed(1)}px  ·  ` +
     `Sensor savings: ${(currentSavings * 100).toFixed(0)}%  ·  ` +
-    `Final uncertainty: ${currentUncertainty.toFixed(3)}`;
+    `Final uncertainty: ${currentUncertainty.toFixed(3)}` +
+    '</p>' +
+    '<button class="btn-restart" onclick="resetSimulation()" style="padding: 10px 28px; border: 2px solid var(--accent); border-radius: 8px; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer;">TUNE AGAIN</button>';
+  panel.style.display = 'block';
   updateMetrics();
 }
 
@@ -1330,8 +1344,7 @@ function startSimulation() {
 }
 
 function resetSimulation() {
-  document.getElementById('overlaySuccess').classList.remove('active');
-  document.getElementById('overlayFail').classList.remove('active');
+  document.getElementById('resultPanel').style.display = 'none';
   document.getElementById('flashRed').classList.remove('show');
 
   initSimulation();

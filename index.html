@@ -401,22 +401,7 @@
     .accordion-content p:last-child { margin-bottom: 0; }
     .accordion-content .katex { font-size: 1.1rem; }
 
-    /* ===== OVERLAYS ===== */
-    .overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      pointer-events: none;
-    }
-    .overlay.active {
-      display: flex;
-      pointer-events: all;
-    }
+    /* ===== RESULT PANEL ===== */
     .overlay-flash {
       position: absolute;
       top: 0; left: 0;
@@ -428,24 +413,14 @@
     .overlay-flash.show {
       opacity: 0.3;
     }
-    .overlay-content {
-      background: rgba(26,38,52,0.92);
-      padding: 32px 48px;
-      border-radius: 16px;
-      text-align: center;
-      backdrop-filter: blur(8px);
-      z-index: 2;
+    #resultPanel h2 {
+      font-size: 1.3rem;
     }
-    .overlay-content h2 {
-      font-size: 1.6rem;
-      margin-bottom: 8px;
-    }
-    .overlay-content p {
+    #resultPanel p {
       font-size: 0.9rem;
-      color: var(--text-secondary);
-      margin-bottom: 16px;
+      line-height: 1.5;
     }
-    .overlay-content .btn-restart {
+    .btn-restart {
       padding: 10px 28px;
       border: 2px solid var(--accent);
       border-radius: 8px;
@@ -455,7 +430,7 @@
       cursor: pointer;
       transition: all var(--transition);
     }
-    .overlay-content .btn-restart:hover {
+    .btn-restart:hover {
       background: var(--accent);
       color: white;
     }
@@ -683,32 +658,14 @@
 
     <div class="main-grid">
       <!-- ===== LEFT: CANVAS ===== -->
-      <div class="card canvas-wrapper" id="canvasContainer">
-        <div id="p5canvas"></div>
-
-        <!-- Overlays -->
-        <div class="overlay" id="overlaySuccess">
-          <div class="overlay-content">
-            <h2 style="color: var(--success);">✓ ROUTE COMPLETE</h2>
-            <p id="successMetrics">Optimal tuning achieved. The AGV successfully navigated the featureless corridor.</p>
-            <button class="btn-restart" onclick="resetSimulation()">TUNE AGAIN</button>
-          </div>
-        </div>
-        <div class="overlay" id="overlayFail">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="card canvas-wrapper" id="canvasContainer">
+          <div id="p5canvas"></div>
           <div class="overlay-flash" id="flashRed" style="background: var(--danger);"></div>
-          <div class="overlay-content">
-            <h2 style="color: var(--danger);">✗ ESTIMATE DIVERGED</h2>
-            <p>The estimated state diverged from the true position. Review your Q/R tuning.</p>
-            <button class="btn-restart" onclick="resetSimulation()">TUNE AGAIN</button>
-          </div>
         </div>
-        <div class="overlay" id="overlayCollision">
-          <div class="overlay-flash" id="flashRed2" style="background: var(--danger);"></div>
-          <div class="overlay-content">
-            <h2 style="color: var(--danger);">✗ COLLISION DETECTED</h2>
-            <p>The EKF estimate drifted into warehouse racking. Try increasing Q (trust odometry less) or reducing R (trust sensors more).</p>
-            <button class="btn-restart" onclick="resetSimulation()">TUNE AGAIN</button>
-          </div>
+
+        <div class="card" id="resultPanel" style="display: none; text-align: center; padding: 24px;">
+          <div id="resultContent"></div>
         </div>
       </div>
 
