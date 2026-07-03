@@ -1054,6 +1054,22 @@
             Savings = EKF performance (0–40% based on position covariance) applied to your selected sensor BOM. Tune the
             filter well and choose cost-effective sensors to maximize savings.
           </div>
+          <details style="margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+            <summary style="font-weight: 500;">Formula &amp; sensor costs</summary>
+            <div style="margin-top: 8px; line-height: 1.7; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+              <div style="margin-bottom: 8px;">$$\text{perfFactor} = 0.40 \times \max\!\big(0,\; 1 - \frac{\sigma}{3.0}\big)$$</div>
+              <div style="margin-bottom: 8px;">$$\text{BOM} = C_{\text{wheel}} + C_{\text{lidar}} + C_{\text{gps}} + n_{\text{beacon}} \times C_{\text{beacon}}$$</div>
+              <div style="margin-bottom: 8px;">$$\text{savings} = \text{round}(\text{perfFactor} \times \text{BOM})$$</div>
+              <div style="margin-top: 6px;">
+                Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong> · beacon <strong>$150</strong> ea.
+              </div>
+              <div style="margin-top: 4px; color: var(--text-secondary);">
+                Where $\sigma = \sqrt{\text{tr}(P_{[0:2,0:2]})}$ is the position standard deviation from the EKF covariance.<br>
+                Higher EKF accuracy → lower $\sigma$ → higher perfFactor → more savings.<br>
+                Removing sensors reduces BOM baseline and absolute savings.
+              </div>
+            </div>
+          </details>
         </div>
 
         <div class="section-divider"></div>
