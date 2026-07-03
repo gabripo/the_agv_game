@@ -648,7 +648,7 @@ function draw() {
   }
 
   // GPS update
-  if (sensorGpsEnabled) {
+  if (sensorGpsEnabled && !isInCorridor(simTime)) {
     const gpsNoise = 1.0 / Math.max(sensorGpsAccuracy, 0.01);
     const gpsMeas = [
       trueSt.x + (Math.random() - 0.5) * gpsNoise * 4,
