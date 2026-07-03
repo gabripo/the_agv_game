@@ -491,33 +491,112 @@
     /* ===== SENSOR TOGGLES ===== */
     .sensor-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      transition: background var(--transition);
+    }
+    .sensor-row + .sensor-row {
+      margin-top: 2px;
+    }
+    .sensor-row:hover {
+      background: rgba(255,255,255,0.03);
     }
     .sensor-toggle {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
+      gap: 6px;
+      font-size: 0.8rem;
       font-weight: 500;
       cursor: pointer;
       user-select: none;
+      min-width: 120px;
     }
     .sensor-toggle input[type="checkbox"] {
       accent-color: var(--accent);
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      margin: 0;
+    }
+    .sensor-slider {
+      flex: 1;
+      min-width: 60px;
+      max-width: 140px;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(to right, var(--success), var(--warning), var(--danger));
+      outline: none;
       cursor: pointer;
     }
-    .sensor-hint {
-      font-size: 0.72rem;
-      color: var(--text-secondary);
-      line-height: 1.4;
-      margin-bottom: 6px;
+    .sensor-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--text);
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
     }
-    .sensor-row + .sensor-hint + input[type="range"] {
-      margin-bottom: 4px;
+    .sensor-slider::-moz-range-thumb {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--text);
+      cursor: pointer;
+      border: none;
+    }
+    .sensor-value {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      min-width: 32px;
+      text-align: right;
+    }
+    .sensor-tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      color: var(--text-secondary);
+      font-size: 0.6rem;
+      font-weight: 700;
+      cursor: help;
+      flex-shrink: 0;
+    }
+    .sensor-tooltip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 6px);
+      transform: translateX(-50%);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.7rem;
+      font-weight: 400;
+      padding: 6px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .sensor-tooltip:hover::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 2px);
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: var(--surface);
     }
 
     /* ===== LOCKED STATE ===== */
@@ -527,7 +606,8 @@
     }
     .locked input[type="range"],
     .locked input[type="number"],
-    .locked .sensor-toggle input[type="checkbox"] {
+    .locked .sensor-toggle input[type="checkbox"],
+    .locked .sensor-slider {
       opacity: 0.5;
       pointer-events: none;
     }
@@ -587,44 +667,39 @@
       <div class="card">
         <div class="dashboard-scroll">
 
-          <!-- CONFIGURE AGV -->
+          <!-- SENSORS -->
           <div>
             <h2>Configure AGV</h2>
+
             <div class="sensor-row">
               <label class="sensor-toggle">
                 <input type="checkbox" id="sensorWheelOdometry" checked>
-                <span>Wheel Odometry</span>
+                <span>Odometry</span>
               </label>
-              <span class="value" id="wheelOdometryValue">1.00</span>
+              <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+              <span class="sensor-value" id="wheelOdometryValue">1.00</span>
+              <span class="sensor-tooltip" data-tip="Wheel encoders measure rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.">&#9432;</span>
             </div>
-            <div class="sensor-hint">Measures wheel rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.</div>
-            <input type="range" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
-          </div>
 
-          <div class="section-divider"></div>
-
-          <!-- SENSORS -->
-          <div>
-            <h2>Sensors</h2>
             <div class="sensor-row">
               <label class="sensor-toggle">
                 <input type="checkbox" id="sensorLidar" checked>
                 <span>LIDAR</span>
               </label>
-              <span class="value" id="lidarValue">1.00</span>
+              <input type="range" class="sensor-slider" id="lidarAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+              <span class="sensor-value" id="lidarValue">1.00</span>
+              <span class="sensor-tooltip" data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
             </div>
-            <div class="sensor-hint">Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.</div>
-            <input type="range" id="lidarAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
 
-            <div class="sensor-row" style="margin-top: 12px;">
+            <div class="sensor-row">
               <label class="sensor-toggle">
                 <input type="checkbox" id="sensorGps">
                 <span>GPS</span>
               </label>
-              <span class="value" id="gpsValue">1.00</span>
+              <input type="range" class="sensor-slider" id="gpsAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
+              <span class="sensor-value" id="gpsValue">1.00</span>
+              <span class="sensor-tooltip" data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
             </div>
-            <div class="sensor-hint">Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.</div>
-            <input type="range" id="gpsAccuracy" min="0.1" max="5.0" step="0.01" value="1.0">
           </div>
 
           <div class="section-divider"></div>
