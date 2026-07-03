@@ -659,6 +659,7 @@ function draw() {
   }
 
   // External sensor updates (position beacons)
+  if (sensorLidarEnabled && !isInCorridor(simTime)) {
   for (const s of externalSensors) {
     const dx = trueSt.x - s.x;
     const dy = trueSt.y - s.y;
@@ -673,6 +674,7 @@ function draw() {
       ];
       ekf.gpsUpdate(meas);
     }
+  }
   }
 
   // Compute divergence
