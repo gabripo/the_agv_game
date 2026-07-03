@@ -10,6 +10,10 @@ class EKFSlam {
     this.defaultR = math.diag([0.5, 0.5]);
     this.Q = math.clone(this.defaultQ);
     this.R = math.clone(this.defaultR);
+    this.lastK = null;
+    this.lastInnov = null;
+    this.lastS = null;
+    this.lastPredictedState = null;
   }
 
   setState(x, y, theta, v) {
@@ -66,6 +70,7 @@ class EKFSlam {
     this.P = math.add(math.multiply(FP, FT), this.Q);
     const Pt = math.transpose(this.P);
     this.P = math.multiply(math.add(this.P, Pt), 0.5);
+    this.lastPredictedState = math.clone(this.state);
   }
 
   h(state, landmark) {
@@ -113,6 +118,10 @@ class EKFSlam {
     this.P = math.multiply(math.subtract(this.I, KH), this.P);
     const Pt = math.transpose(this.P);
     this.P = math.multiply(math.add(this.P, Pt), 0.5);
+
+    this.lastK = K;
+    this.lastInnov = innovFixed;
+    this.lastS = S;
   }
 
   gpsUpdate(measurement) {
@@ -124,16 +133,22 @@ class EKFSlam {
     const z = math.matrix([[mx], [my]]);
     const h = math.matrix([[this.getX()], [this.getY()]]);
 
+    const innov = math.subtract(z, h);
+
     const HT = math.transpose(H);
     const PHT = math.multiply(this.P, HT);
     const S = math.add(math.multiply(H, PHT), Rg);
     const K = math.multiply(PHT, math.inv(S));
 
-    this.state = math.add(this.state, math.multiply(K, math.subtract(z, h)));
+    this.state = math.add(this.state, math.multiply(K, innov));
     const KH = math.multiply(K, H);
     this.P = math.multiply(math.subtract(this.I, KH), this.P);
     const Pt = math.transpose(this.P);
     this.P = math.multiply(math.add(this.P, Pt), 0.5);
+
+    this.lastK = K;
+    this.lastInnov = innov;
+    this.lastS = S;
   }
 
   imuUpdate(thetaMeasured, noiseTheta) {
@@ -142,13 +157,14 @@ class EKFSlam {
     const z = math.matrix([[thetaMeasured]]);
     const h = math.matrix([[this.getTheta()]]);
 
+    const innov = math.subtract(z, h);
+    innov.valueOf()[0][0] = this.normalizeAngle(innov.valueOf()[0][0]);
+
     const HT = math.transpose(H);
     const PHT = math.multiply(this.P, HT);
     const S = math.add(math.multiply(H, PHT), Rimu);
     const K = math.multiply(PHT, math.inv(S));
 
-    const innov = math.subtract(z, h);
-    innov.valueOf()[0][0] = this.normalizeAngle(innov.valueOf()[0][0]);
     this.state = math.add(this.state, math.multiply(K, innov));
     this.state.valueOf()[2][0] = this.normalizeAngle(this.state.valueOf()[2][0]);
 
@@ -156,6 +172,10 @@ class EKFSlam {
     this.P = math.multiply(math.subtract(this.I, KH), this.P);
     const Pt = math.transpose(this.P);
     this.P = math.multiply(math.add(this.P, Pt), 0.5);
+
+    this.lastK = K;
+    this.lastInnov = innov;
+    this.lastS = S;
   }
 
   getPositionUncertainty() {
@@ -174,6 +194,15 @@ class EKFSlam {
   getPositionSigma() {
     return Math.sqrt(this.getPositionUncertainty());
   }
+
+  getState() { return this.state; }
+  getCovariance() { return this.P; }
+  getLastK() { return this.lastK; }
+  getLastInnov() { return this.lastInnov; }
+  getLastS() { return this.lastS; }
+  getLastQ() { return this.Q; }
+  getLastR() { return this.R; }
+  getPredictedState() { return this.lastPredictedState; }
 }
 
 // ============================================================
@@ -201,6 +230,7 @@ let currentUncertainty = 0;
 let currentDivergence = 0;
 let maxDivergence = 0;
 let currentSavings = 0;
+let showMagic = false;
 
 const DT = 1;
 const TOTAL_TIME = 400;
@@ -544,8 +574,8 @@ function mousePressed() {
       if (toggle) {
         toggle.checked = !toggle.checked;
         updateSensorTuning();
-        updateMetrics();
-      }
+  updateMetrics();
+}
       return false;
     }
   }
@@ -627,6 +657,7 @@ function mouseReleased() {
 // ============================================================
 function draw() {
   background(30, 35, 42);
+  updateMagicDisplay();
 
   // Always draw the warehouse
   drawWarehouse();
@@ -1560,6 +1591,67 @@ function updateSliderBg(slider) {
 
 // UI EVENT BINDING (browser only)
 // ============================================================
+function matrixToLatex(M, label, decimals) {
+  if (!M) return '';
+  decimals = decimals || 3;
+  const s = M.size();
+  const rows = s[0], cols = s[1];
+  const v = M.valueOf();
+  let body = '';
+  for (let i = 0; i < rows; i++) {
+    if (i > 0) body += '\\\\';
+    for (let j = 0; j < cols; j++) {
+      if (j > 0) body += ' & ';
+      const val = v[i][j];
+      body += (typeof val === 'number' && Math.abs(val) < 1e-10) ? '0' : val.toFixed(decimals);
+    }
+  }
+  return '$' + (label ? label + ' = ' : '') + '\\begin{bmatrix}' + body + '\\end{bmatrix}$';
+}
+
+function updateMagicDisplay() {
+  const container = document.getElementById('matrixDisplay');
+  if (!container || container.style.display === 'none') return;
+  if (!ekf) { container.innerHTML = ''; return; }
+
+  const x = ekf.getState();
+  const P = ekf.getCovariance();
+  const K = ekf.getLastK();
+  const innov = ekf.getLastInnov();
+  const xPred = ekf.getPredictedState();
+
+  const pv = P.valueOf();
+  const Ppos = math.matrix([[pv[0][0], pv[0][1]], [pv[1][0], pv[1][1]]]);
+
+  let html = '<div class="matrix-block">';
+  html += '<div class="matrix-cell">' + matrixToLatex(x, '\\mathbf{x}_k', 2) + '</div>';
+  if (xPred) {
+    html += '<div class="matrix-cell">' + matrixToLatex(xPred, '\\mathbf{x}_k^-', 2) + '</div>';
+  }
+  html += '<div class="matrix-cell">' + matrixToLatex(Ppos, '\\mathbf{P}_k', 3) + '</div>';
+  if (K) {
+    html += '<div class="matrix-cell">' + matrixToLatex(K, '\\mathbf{K}_k', 4) + '</div>';
+    html += '<div class="matrix-cell">' + matrixToLatex(innov, '\\mathbf{y}_k', 4) + '</div>';
+  }
+  html += '</div>';
+
+  html += '<div style="margin-top: 10px; font-size: 0.72rem; line-height: 1.9; display: grid; grid-template-columns: auto 1fr; gap: 0 12px; color: var(--text-secondary);">';
+  html += '<span>$\\mathbf{x}_k$</span><span>Posterior state estimate (after update)</span>';
+  html += '<span>$\\mathbf{x}_k^-$</span><span>Prior state estimate (after predict, before update)</span>';
+  html += '<span>$\\mathbf{P}_k$</span><span>State covariance (position block)</span>';
+  html += '<span>$\\mathbf{K}_k$</span><span>Kalman gain</span>';
+  html += '<span>$\\mathbf{y}_k$</span><span>Innovation (measurement residual)</span>';
+  html += '</div>';
+
+  container.innerHTML = html;
+  if (typeof renderMathInElement === 'function') {
+    renderMathInElement(container, {
+      delimiters: [{ left: '$', right: '$', display: false }],
+      throwOnError: false
+    });
+  }
+}
+// ============================================================
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', function () {
     const speedEl = document.getElementById('agvSpeed');
@@ -1617,6 +1709,13 @@ if (typeof document !== 'undefined') {
       if (running || completed || crashed) return;
       placingSensor = !placingSensor;
       this.textContent = placingSensor ? 'Click map to place...' : '+ Add Beacon';
+    });
+    document.getElementById('btnMagic').addEventListener('click', function () {
+      showMagic = !showMagic;
+      const container = document.getElementById('matrixDisplay');
+      container.style.display = showMagic ? 'block' : 'none';
+      this.textContent = showMagic ? 'Hide the Magic' : 'Show the Magic';
+      if (showMagic) updateMagicDisplay();
     });
     renderExternalSensorList();
 
