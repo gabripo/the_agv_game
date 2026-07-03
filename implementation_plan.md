@@ -7,7 +7,12 @@ the_agv_game/
 ├── index.html              # All HTML + embedded CSS + CDN script tags
 ├── script.js               # All JS: EKF core + p5.js simulation + dashboard logic
 ├── design_choices.md       # Design decisions document
-└── implementation_plan.md  # This file
+├── docs/architecture.md    # Technical architecture deep-dive
+├── implementation_plan.md  # This file
+├── README.md               # Project readme
+├── tests/                  # Unit and integration tests
+├── .github/workflows/      # CI/CD pipelines
+└── (Dockerfile, nginx.conf, etc.)
 ```
 
 ---

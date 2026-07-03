@@ -3,21 +3,27 @@
 ## 1. System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        index.html                                    │
-│  ┌──────────────────────────────┬────────────────────────────────┐   │
-│  │   p5.js Canvas               │   Dashboard Panel              │   │
-│  │   (warehouse + AGV sim)      │   - Q/R sliders               │   │
-│  │                              │   - Slip mode selector        │   │
-│  │                              │   - Live metrics              │   │
-│  │                              │   - Savings calculator        │   │
-│  │                              │   - Sales narrative            │   │
-│  ├──────────────────────────────┴────────────────────────────────┤   │
-│  │   Explanatory Accordion (Executive / Engineer / Specialist)    │   │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                                                                       │
-│  CDN: p5.js | math.js | KaTeX        Test: Mocha + Chai + math.js    │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────┬──────────────────────────────┐
+│   Left Column (3fr)            │ Right Column: Dashboard (2fr) │
+│  ┌───────────────────────────┐ │ ┌──────────────────────────┐ │
+│  │  p5.js Canvas             │ │ │  DEPLOY AGV Button       │ │
+│  │  (warehouse + AGV sim)    │ │ │  AGV Speed Slider        │ │
+│  │                           │ │ │  Stop on Divergence Tog  │ │
+│  ├───────────────────────────┤ │ │  ▲ Sensors Config (det)  │ │
+│  │  Result Panel             │ │ │  ├ Interior (odometry)   │ │
+│  │  (game-over / success)    │ │ │  └ Exterior (LIDAR,GPS,  │ │
+│  ├───────────────────────────┤ │ │        beacons + range)  │ │
+│  │  Sensor Explanations      │ │ │  ▲ Route Config (det)    │ │
+│  │  (odometry, LIDAR, GPS)   │ │ │  ├ A/B drag markers     │ │
+│  ├───────────────────────────┤ │ │  └ Slip mode selector   │ │
+│  │  ▲ EKF Accordion          │ │ │  Live Metrics            │ │
+│  │  ├ Executive              │ │ │  Hardware Savings        │ │
+│  │  ├ Engineer               │ │ │  Business Impact         │ │
+│  │  └ Specialist (KaTeX)     │ │ └──────────────────────────┘ │
+│  └───────────────────────────┘ │                              │
+└─────────────────────────────────┴──────────────────────────────┘
+
+CDN: p5.js | math.js | KaTeX        Tests: Mocha + Chai + Playwright
 ```
 
 The application is a single-page, client-only web app with no backend. All logic runs in the browser.
@@ -39,14 +45,17 @@ p5.js draw()
     ├─ 2. Get corrupted control (slip applied in corridor)
     ├─ 3. EKF.predict(control, dt)
     ├─ 4. Get visible landmarks (empty in corridor)
-    ├─ 5. If landmark: generate noisy measurement → EKF.update(meas, lm)
-    ├─ 6. Compute divergence & uncertainty
-    ├─ 7. Check collision (EKF estimate vs. rack bounding boxes)
-    ├─ 8. Check off-canvas (EKF estimate out of bounds)
-    ├─ 9. Push to history arrays
-    ├─ 10. Render: racks, landmarks, path, true/ekf trails, measurements
-    ├─ 11. Update dashboard metrics
-    └─ 12. simTime += DT
+    ├─ 5. If landmark + LIDAR enabled: noisy measurement → EKF.update(meas, lm)
+    ├─ 6. If GPS enabled + outside corridor: noisy GPS → EKF.gpsUpdate()
+    ├─ 7. For each external sensor (beacon): if within range + LIDAR enabled + outside corridor: direct position update → EKF.gpsUpdate()
+    ├─ 8. Compute divergence & uncertainty
+    ├─ 9. Check divergence (>60px from true) → gameOver('divergence')
+    ├─ 10. Check collision (EKF estimate vs. rack bounding boxes) → gameOver('collision')
+    ├─ 11. Check off-canvas (EKF estimate out of bounds) → gameOver('lost')
+    ├─ 12. Push to history arrays (up to 2000 points)
+    ├─ 13. Render: racks, landmarks (highlighted active beacons), path, true/ekf trails, measurements
+    ├─ 14. Update dashboard metrics
+    └─ 15. simTime += DT × (agvSpeed / 2.0)
 ```
 
 ### 2.2 State Machine
@@ -164,23 +173,31 @@ $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
 The reference path is a cubic Bézier curve from Point A (150, 440) to Point B (700, 160) with control points at (280, 440) and (500, 300). The trajectory is pre-computed at integer timesteps and interpolated with linear interpolation between steps.
 
-400 timesteps at ~60 fps ≈ 6.7 seconds per run.
+Each trajectory point stores `{x, y, theta, v}` where `v = agvSpeed` (configurable via slider, range 0.5–5.0).
 
-### 4.2 The Corridor Trap
+400 timesteps at ~60 fps ≈ 6.7 seconds per run at default speed.
+
+### 4.2 Speed Scaling
+
+`simTime` advances by `DT × (agvSpeed / 2.0)` per frame. At speed 5.0, the simulation completes 2.5× faster (≈2.7s). The EKF predict still runs once per frame, so higher speed means less computation per unit path length — making the corridor genuinely harder to navigate at speed.
+
+### 4.3 The Corridor Trap
 
 | Aspect | Implementation |
 |--------|---------------|
 | **Timing** | Default `slipStartTime` = 120, `slipEndTime` = 280 (timesteps 120–280 of 400) |
-| **Landmark dropout** | `getVisibleLandmarks()` returns empty array when `isInCorridor(simTime)` is true |
+| **LIDAR landmark dropout** | `getVisibleLandmarks()` returns empty array inside corridor |
+| **GPS dropout** | GPS update gated by `!isInCorridor(simTime)` |
+| **Beacon dropout** | External sensor position updates gated by `!isInCorridor(simTime)` |
 | **Control corruption** | `getCorruptedControl()` subtracts a sinusoidal steering bias (max 0.015 rad/timestep) from the nominal `thetaDot` during the corridor window |
 | **Noise** | Small random noise (±0.002 rad/timestep) added to prevent exact reproducibility |
 
-### 4.3 Slip Mode
+### 4.4 Slip Mode
 
 - **Deterministic**: Slip always occurs at timesteps 120–280 (fixed).
 - **Semi-Random**: `computeSlipParams()` randomizes the onset (±60 steps) and offset (±40 steps) of the corridor window. Called at deploy time.
 
-### 4.4 Collision Detection
+### 4.5 Collision Detection
 
 ```javascript
 function checkCollision() {
@@ -191,24 +208,41 @@ function checkCollision() {
 
 Racks are placed along the corridor exit (timesteps ~250–350) where EKF divergence is maximal after the landmark-free zone.
 
+### 4.6 Divergence Check
+
+```javascript
+function checkDivergence() {
+  const allow = document.getElementById('allowDivergence');
+  if (allow && !allow.checked) return false;  // user opted out
+  return currentDivergence > 60;              // 60px threshold
+}
+```
+
+`currentDivergence = sqrt((ekf.x - trueSt.x)² + (ekf.y - trueSt.y)²)` computed every frame. The check is active throughout the simulation (no grace period), but can be disabled via the "Stop on divergence" toggle.
+
 ---
 
 ## 5. Hardware Savings Calculator
 
 ```
-savings = 0.40 * max(0, 1 - σ / σ_max)
+perfFactor = 0.40 * max(0, 1 - σ / σ_max)
 
 where:
-  σ     = sqrt(tr(P[0:2, 0:2]))  — position standard deviation from EKF
-  σ_max = 3.0                     — threshold where savings = 0
-  0.40  = 40% maximum savings
+  σ         = sqrt(tr(P[0:2, 0:2]))  — position standard deviation from EKF
+  σ_max     = 3.0                     — threshold where savings = 0
+  0.40      = 40% maximum savings from EKF tuning
+
+BOM cost = Σ enabled sensor costs:
+  wheel  = $200
+  lidar  = $5,000
+  gps    = $800
+  beacon = $150 each
+
+dollar_savings = round(perfFactor × BOM_cost)
+savings_pct    = dollar_savings / BOM_cost × 100
 ```
 
-The dollar savings displayed in the dashboard use a hypothetical $5,000 lidar cost:
-
-```
-dollar_savings = round(savings * 5000)
-```
+The dollar savings scale with the actual sensor configuration: more/better sensors increase the BOM baseline, so the same EKF quality yields larger absolute savings. Removing sensors reduces both BOM and potential savings.
 
 ---
 
@@ -220,15 +254,15 @@ dollar_savings = round(savings * 5000)
 1. Floor + grid
 2. Trajectory path (faded)
 3. Racks (with hazard stripes)
-4. Landmarks (with sensor range circles)
+4. Landmarks (beacons with active/inactive highlighting)
 5. Start/End zones (A/B markers)
-6. True position trail (ghost grey polyline)
+6. True position trail (ghost grey polyline, up to 2000 points)
 7. EKF estimate trail (blue polyline)
 8. Corridor zone warning overlay
 9. Raw sensor measurement (red dot + landmark line)
 10. True AGV (ghost, 25% opacity)
-11. EKF AGV (solid blue, direction indicator)
-12. Overlays (Game Over / Success) — positioned via CSS
+11. EKF AGV (solid blue, direction indicator with LIDAR sweep arc)
+12. Red flash overlay (on collision/divergence)
 ```
 
 ---
@@ -237,8 +271,8 @@ dollar_savings = round(savings * 5000)
 
 | File | Responsibility |
 |------|---------------|
-| `index.html` | DOM structure, CSS (~480 lines), CDN script tags, 3-tier accordion with KaTeX |
-| `script.js` | `EKFSlam` class (131 lines), simulation world (112 lines), p5.js setup/draw (92 lines), rendering (280 lines), UI/dashboard (170 lines), Node.js exports (20 lines) |
+| `index.html` | DOM structure, CSS (~580 lines), CDN script tags, 3-tier accordion with KaTeX |
+| `script.js` | `EKFSlam` class (150+ lines), simulation world (120+ lines), p5.js setup/draw (100+ lines), rendering (280+ lines), UI/dashboard (200+ lines), sensor/business logic, Node.js exports |
 | `tests/setup.js` | Provides `global.math` from npm `mathjs` package |
 | `tests/test_ekf.js` | 28 unit tests for the EKF class |
 | `tests/test_functions.js` | 17 unit tests for pure simulation functions |
