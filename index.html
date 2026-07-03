@@ -796,6 +796,126 @@
         <div class="card" id="resultPanel" style="display: none; text-align: center; padding: 24px;">
           <div id="resultContent"></div>
         </div>
+
+        <div class="card" style="padding: 16px 20px;">
+          <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+            <strong>Odometry:</strong> Higher = more accurate = lower process noise. At max, the filter trusts wheel
+            encoders almost perfectly. At min, it expects significant slip and grows covariance faster.<br>
+            <strong>LIDAR:</strong> Higher = more accurate = lower measurement noise. At max, the filter strongly trusts
+            landmark detections. At min, measurements are treated as very noisy.<br>
+            <strong>GPS:</strong> Higher = more accurate = lower position noise. At max, GPS fixes are near-perfect. At
+            min, GPS is unreliable and provides very noisy absolute position updates.
+          </p>
+        </div>
+
+        <div style="margin-top: 4px;">
+
+          <!-- EXECUTIVE -->
+          <details class="accordion-section" id="accExecutive">
+            <summary><span class="tier-badge tier-executive">Executive</span> The Business Case for Sensor Fusion
+            </summary>
+            <div class="accordion-content">
+              <p>Imagine walking through a pitch-black warehouse. You count your steps (odometry), but each step
+                introduces
+                drift — after 50 meters, you could be several meters off course. Every time you reach out and touch a
+                wall
+                (sensor update), you correct your mental map.</p>
+              <p>The Extended Kalman Filter does exactly this for autonomous vehicles: it continuously weighs the
+                robot's
+                internal motion estimate against external sensor readings. When tuned correctly, it ensures the robot
+                always
+                knows where it is — even when the floor is slippery or visual landmarks disappear.</p>
+              <p><strong>Business outcome:</strong> Reliable navigation without expensive high-precision sensors. Lower
+                costs, higher uptime, safer operations.</p>
+            </div>
+          </details>
+
+          <!-- ENGINEER -->
+          <details class="accordion-section" id="accEngineer">
+            <summary><span class="tier-badge tier-engineer">Engineer</span> The Predict-Update Loop &amp; Covariance
+              Tuning
+            </summary>
+            <div class="accordion-content">
+              <p>The EKF operates in two phases per timestep:</p>
+              <p><strong>1. Predict (Motion Model):</strong> The state <code>x</code> is advanced via a non-linear
+                kinematic
+                function <code>f(x, u)</code>. The covariance <code>P</code> grows because the motion model has
+                uncertainty
+                — this is encoded in the <strong>Process Noise matrix Q</strong>.</p>
+              <p><strong>2. Update (Sensor Fusion):</strong> A noisy measurement <code>z</code> arrives. The filter
+                computes
+                the <strong>Kalman Gain K = P·Hᵀ(H·P·Hᵀ + R)⁻¹</strong>, which optimally weights the prediction vs. the
+                measurement. The <strong>Measurement Noise matrix R</strong> determines how much the filter trusts the
+                sensor.</p>
+              <p>The Q and R matrices are your <em>confidence dials</em>:</p>
+              <p>— Low Q + high R = "trust the motion model, ignore noisy sensors"<br>
+                — High Q + low R = "trust the sensors, the motion model is unreliable"</p>
+              <p>A balanced tuning (Q ≈ R in the right units) allows the filter to dynamically adapt — trusting the
+                model
+                when sensors fail, and trusting sensors when the model drifts.</p>
+            </div>
+          </details>
+
+          <!-- SPECIALIST -->
+          <details class="accordion-section" id="accSpecialist">
+            <summary><span class="tier-badge tier-specialist">Specialist</span> EKF Mathematics &amp; Jacobian
+              Linearization
+            </summary>
+            <div class="accordion-content">
+              <p><strong>State Vector</strong> (4 DOF): planar pose + velocity</p>
+              <div class="katex-block">$$ \mathbf{x}_k = \begin{bmatrix} x \\ y \\ \theta \\ v \end{bmatrix} $$</div>
+
+              <p><strong>Non-Linear Motion Model</strong></p>
+              <div class="katex-block">$$ \mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k
+                \cos(\theta_k) \Delta t \\ y_k + v_k \sin(\theta_k) \Delta t \\ \theta_k + \dot{\theta} \Delta t \\ v_k
+                +
+                \dot{v} \Delta t \end{bmatrix} $$</div>
+
+              <p><strong>Jacobian of f w.r.t. state</strong> (linearization point: current estimate)</p>
+              <div class="katex-block">$$ \mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}}
+                \bigg|_{\mathbf{x}_{k-1},
+                \mathbf{u}_k} = \begin{bmatrix} 1 & 0 & -v_k \sin(\theta_k) \Delta t & \cos(\theta_k) \Delta t \\ 0 & 1
+                &
+                v_k \cos(\theta_k) \Delta t & \sin(\theta_k) \Delta t \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} $$
+              </div>
+
+              <p><strong>Predict Step</strong></p>
+              <div class="katex-block">$$ \mathbf{x}_k^- = f(\mathbf{x}_{k-1}, \mathbf{u}_k) $$</div>
+              <div class="katex-block">$$ \mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} +
+                \mathbf{Q} $$</div>
+
+              <p><strong>Measurement Model</strong> (range &amp; bearing to landmark at (l<sub>x</sub>, l<sub>y</sub>))
+              </p>
+              <div class="katex-block">$$ \mathbf{z}_k = h(\mathbf{x}_k) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y -
+                y_k)^2} \\ \text{atan2}(l_y - y_k,\; l_x - x_k) - \theta_k \end{bmatrix} $$</div>
+
+              <p><strong>Jacobian of h w.r.t. state</strong></p>
+              <div class="katex-block">$$ \mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}
+                =
+                \begin{bmatrix} -\frac{\Delta x}{d} & -\frac{\Delta y}{d} & 0 & 0 \\ \frac{\Delta y}{d^2} &
+                -\frac{\Delta
+                x}{d^2} & -1 & 0 \end{bmatrix} $$</div>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">where Δx = l<sub>x</sub> − x, Δy =
+                l<sub>y</sub> −
+                y, d = √(Δx² + Δy²)</p>
+
+              <p><strong>Kalman Gain &amp; Update Step</strong></p>
+              <div class="katex-block">$$ \mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k
+                \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1} $$</div>
+              <div class="katex-block">$$ \mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k \left( \mathbf{z}_k -
+                h(\mathbf{x}_k^-) \right) $$</div>
+              <div class="katex-block">$$ \mathbf{P}_k^+ = \left( \mathbf{I} - \mathbf{K}_k \mathbf{H}_k \right)
+                \mathbf{P}_k^- $$</div>
+
+              <p><strong>Key Insight:</strong> Because both <strong>f</strong> and <strong>h</strong> are non-linear, we
+                linearize them via their Jacobians at each timestep — this is what makes the filter <em>Extended</em>.
+                The
+                Jacobians capture the local slope of the non-linear functions, enabling approximately optimal fusion of
+                non-linear models and measurements.</p>
+            </div>
+          </details>
+
+        </div>
       </div>
 
       <!-- ===== RIGHT: DASHBOARD ===== -->
@@ -834,7 +954,6 @@
                     value="1.0">
                   <span class="sensor-value" id="wheelOdometryValue">1.00</span>
                 </div>
-                <div class="slider-hint" style="padding: 0 8px;">Higher = more accurate odometry = lower process noise. At max, the filter trusts wheel encoders almost perfectly. At min, it expects significant slip and grows covariance faster.</div>
               </div>
               <div style="margin-top: 12px;">
                 <h2>Exterior Sensors</h2>
@@ -847,7 +966,6 @@
                     value="1.0">
                   <span class="sensor-value" id="lidarValue">1.00</span>
                 </div>
-                <div class="slider-hint" style="padding: 0 8px;">Higher = more accurate LIDAR = lower measurement noise. At max, the filter strongly trusts landmark detections. At min, measurements are treated as very noisy.</div>
                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
                   <span style="font-size: 0.75rem; color: var(--text-secondary); min-width: 72px;">Range</span>
                   <input type="range" class="sensor-slider" id="lidarRange" min="100" max="600" step="10" value="400">
@@ -869,192 +987,101 @@
                     value="1.0">
                   <span class="sensor-value" id="gpsValue">1.00</span>
                 </div>
-                <div class="slider-hint" style="padding: 0 8px;">Higher = more accurate GPS = lower position noise. At max, GPS fixes are near-perfect. At min, GPS is unreliable and provides very noisy absolute position updates.</div>
-                </div>
               </div>
             </div>
-          </details>
+        </div>
+        </details>
 
-          <details class="accordion-section" id="accRoute" open>
-            <summary>Route Configuration</summary>
-            <div class="accordion-content" style="padding: 12px 16px;">
-              <div>
-                <h2>Route Configuration</h2>
+        <details class="accordion-section" id="accRoute" open>
+          <summary>Route Configuration</summary>
+          <div class="accordion-content" style="padding: 12px 16px;">
+            <div>
+              <h2>Route Configuration</h2>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+                Drag the <strong style="color: var(--success);">A</strong> and <strong
+                  style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
+              </p>
+            </div>
+            <div style="margin-top: 12px;">
+              <h2>Corridor Scenario</h2>
+              <div class="mode-selector" id="modeSelector">
+                <button class="mode-btn active" data-mode="deterministic">Deterministic</button>
+                <button class="mode-btn" data-mode="random">Semi-Random</button>
+              </div>
+              <div class="corridor-params show" id="corridorParams">
                 <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
-                  Drag the <strong style="color: var(--success);">A</strong> and <strong
-                    style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
+                  Drag the <strong style="color: var(--warning);">corridor markers</strong> along the path on the map
+                  to set the featureless zone.
                 </p>
               </div>
-              <div style="margin-top: 12px;">
-                <h2>Corridor Scenario</h2>
-                <div class="mode-selector" id="modeSelector">
-                  <button class="mode-btn active" data-mode="deterministic">Deterministic</button>
-                  <button class="mode-btn" data-mode="random">Semi-Random</button>
-                </div>
-                <div class="corridor-params show" id="corridorParams">
-                  <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
-                    Drag the <strong style="color: var(--warning);">corridor markers</strong> along the path on the map
-                    to set the featureless zone.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </details>
-
-          <!-- LIVE METRICS -->
-          <div>
-            <h2>Live Metrics</h2>
-            <div class="metric-row">
-              <span class="metric-label">Status</span>
-              <span class="metric-value" id="statusDisplay">
-                <span class="status-led green" id="statusLed"></span>
-                <span id="statusText">Awaiting Deployment</span>
-              </span>
-            </div>
-            <div class="metric-row">
-              <span class="metric-label">Position Uncertainty <span
-                  style="font-family: monospace;">(tr(P))</span></span>
-              <span class="metric-value" id="uncertaintyDisplay">—</span>
-            </div>
-            <div class="metric-row">
-              <span class="metric-label">EKF Divergence</span>
-              <span class="metric-value" id="divergenceDisplay">—</span>
             </div>
           </div>
+        </details>
 
-          <div class="section-divider"></div>
-
-          <!-- SAVINGS CALCULATOR -->
-          <div>
-            <h2>Hardware Savings Calculator</h2>
-            <div class="metric-row">
-              <span class="metric-label">Sensor Cost Reduction</span>
-              <span class="metric-value good" id="savingsPercent">0%</span>
-            </div>
-            <div class="savings-bar-container">
-              <div class="savings-bar" id="savingsBar" style="width: 0%;"></div>
-            </div>
-            <div class="savings-text" id="savingsNarrative">
-              Tune the EKF to reduce lidar specification costs. An optimal filter can save up to <strong>40% per
-                unit</strong>.
-            </div>
+        <!-- LIVE METRICS -->
+        <div>
+          <h2>Live Metrics</h2>
+          <div class="metric-row">
+            <span class="metric-label">Status</span>
+            <span class="metric-value" id="statusDisplay">
+              <span class="status-led green" id="statusLed"></span>
+              <span id="statusText">Awaiting Deployment</span>
+            </span>
           </div>
-
-          <div class="section-divider"></div>
-
-          <!-- SALES NARRATIVE -->
-          <div>
-            <h2>Business Impact</h2>
-            <div class="savings-text">
-              <p style="margin-bottom: 8px;"><strong>Reduced Deployment Risk:</strong> The "slippery floor" scenario
-                simulates real-world odometry failure (slick surfaces, uneven terrain). A well-tuned EKF prevents
-                catastrophic divergence.</p>
-              <p style="margin-bottom: 8px;"><strong>Lower BOM Costs:</strong> With optimal sensor fusion, you can use
-                lower-spec lidars/cameras while maintaining reliability — reducing per-unit cost by up to 40%.</p>
-              <p><strong>Minimized Downtime:</strong> Real-time state recovery means the AGV handles edge cases without
-                human intervention, keeping logistics lines running.</p>
-            </div>
+          <div class="metric-row">
+            <span class="metric-label">Position Uncertainty <span style="font-family: monospace;">(tr(P))</span></span>
+            <span class="metric-value" id="uncertaintyDisplay">—</span>
           </div>
-
+          <div class="metric-row">
+            <span class="metric-label">EKF Divergence</span>
+            <span class="metric-value" id="divergenceDisplay">—</span>
+          </div>
         </div>
+
+        <div class="section-divider"></div>
+
+        <!-- SAVINGS CALCULATOR -->
+        <div>
+          <h2>Hardware Savings Calculator</h2>
+          <div class="metric-row">
+            <span class="metric-label">Sensor Cost Reduction</span>
+            <span class="metric-value good" id="savingsPercent">0%</span>
+          </div>
+          <div class="savings-bar-container">
+            <div class="savings-bar" id="savingsBar" style="width: 0%;"></div>
+          </div>
+          <div class="savings-text" id="savingsNarrative">
+            Tune the EKF to reduce lidar specification costs. An optimal filter can save up to <strong>40% per
+              unit</strong>.
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- SALES NARRATIVE -->
+        <div>
+          <h2>Business Impact</h2>
+          <div class="savings-text">
+            <p style="margin-bottom: 8px;"><strong>Reduced Deployment Risk:</strong> The "slippery floor" scenario
+              simulates real-world odometry failure (slick surfaces, uneven terrain). A well-tuned EKF prevents
+              catastrophic divergence.</p>
+            <p style="margin-bottom: 8px;"><strong>Lower BOM Costs:</strong> With optimal sensor fusion, you can use
+              lower-spec lidars/cameras while maintaining reliability — reducing per-unit cost by up to 40%.</p>
+            <p><strong>Minimized Downtime:</strong> Real-time state recovery means the AGV handles edge cases without
+              human intervention, keeping logistics lines running.</p>
+          </div>
+        </div>
+
       </div>
     </div>
+  </div>
 
-    <!-- ===== ACCORDION ===== -->
-    <div style="margin-top: 4px;">
 
-      <!-- EXECUTIVE -->
-      <details class="accordion-section" id="accExecutive">
-        <summary><span class="tier-badge tier-executive">Executive</span> The Business Case for Sensor Fusion</summary>
-        <div class="accordion-content">
-          <p>Imagine walking through a pitch-black warehouse. You count your steps (odometry), but each step introduces
-            drift — after 50 meters, you could be several meters off course. Every time you reach out and touch a wall
-            (sensor update), you correct your mental map.</p>
-          <p>The Extended Kalman Filter does exactly this for autonomous vehicles: it continuously weighs the robot's
-            internal motion estimate against external sensor readings. When tuned correctly, it ensures the robot always
-            knows where it is — even when the floor is slippery or visual landmarks disappear.</p>
-          <p><strong>Business outcome:</strong> Reliable navigation without expensive high-precision sensors. Lower
-            costs, higher uptime, safer operations.</p>
-        </div>
-      </details>
 
-      <!-- ENGINEER -->
-      <details class="accordion-section" id="accEngineer">
-        <summary><span class="tier-badge tier-engineer">Engineer</span> The Predict-Update Loop &amp; Covariance Tuning
-        </summary>
-        <div class="accordion-content">
-          <p>The EKF operates in two phases per timestep:</p>
-          <p><strong>1. Predict (Motion Model):</strong> The state <code>x</code> is advanced via a non-linear kinematic
-            function <code>f(x, u)</code>. The covariance <code>P</code> grows because the motion model has uncertainty
-            — this is encoded in the <strong>Process Noise matrix Q</strong>.</p>
-          <p><strong>2. Update (Sensor Fusion):</strong> A noisy measurement <code>z</code> arrives. The filter computes
-            the <strong>Kalman Gain K = P·Hᵀ(H·P·Hᵀ + R)⁻¹</strong>, which optimally weights the prediction vs. the
-            measurement. The <strong>Measurement Noise matrix R</strong> determines how much the filter trusts the
-            sensor.</p>
-          <p>The Q and R matrices are your <em>confidence dials</em>:</p>
-          <p>— Low Q + high R = "trust the motion model, ignore noisy sensors"<br>
-            — High Q + low R = "trust the sensors, the motion model is unreliable"</p>
-          <p>A balanced tuning (Q ≈ R in the right units) allows the filter to dynamically adapt — trusting the model
-            when sensors fail, and trusting sensors when the model drifts.</p>
-        </div>
-      </details>
-
-      <!-- SPECIALIST -->
-      <details class="accordion-section" id="accSpecialist">
-        <summary><span class="tier-badge tier-specialist">Specialist</span> EKF Mathematics &amp; Jacobian Linearization
-        </summary>
-        <div class="accordion-content">
-          <p><strong>State Vector</strong> (4 DOF): planar pose + velocity</p>
-          <div class="katex-block">$$ \mathbf{x}_k = \begin{bmatrix} x \\ y \\ \theta \\ v \end{bmatrix} $$</div>
-
-          <p><strong>Non-Linear Motion Model</strong></p>
-          <div class="katex-block">$$ \mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k
-            \cos(\theta_k) \Delta t \\ y_k + v_k \sin(\theta_k) \Delta t \\ \theta_k + \dot{\theta} \Delta t \\ v_k +
-            \dot{v} \Delta t \end{bmatrix} $$</div>
-
-          <p><strong>Jacobian of f w.r.t. state</strong> (linearization point: current estimate)</p>
-          <div class="katex-block">$$ \mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_{k-1},
-            \mathbf{u}_k} = \begin{bmatrix} 1 & 0 & -v_k \sin(\theta_k) \Delta t & \cos(\theta_k) \Delta t \\ 0 & 1 &
-            v_k \cos(\theta_k) \Delta t & \sin(\theta_k) \Delta t \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} $$
-          </div>
-
-          <p><strong>Predict Step</strong></p>
-          <div class="katex-block">$$ \mathbf{x}_k^- = f(\mathbf{x}_{k-1}, \mathbf{u}_k) $$</div>
-          <div class="katex-block">$$ \mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} +
-            \mathbf{Q} $$</div>
-
-          <p><strong>Measurement Model</strong> (range &amp; bearing to landmark at (l<sub>x</sub>, l<sub>y</sub>))</p>
-          <div class="katex-block">$$ \mathbf{z}_k = h(\mathbf{x}_k) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y -
-            y_k)^2} \\ \text{atan2}(l_y - y_k,\; l_x - x_k) - \theta_k \end{bmatrix} $$</div>
-
-          <p><strong>Jacobian of h w.r.t. state</strong></p>
-          <div class="katex-block">$$ \mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-} =
-            \begin{bmatrix} -\frac{\Delta x}{d} & -\frac{\Delta y}{d} & 0 & 0 \\ \frac{\Delta y}{d^2} & -\frac{\Delta
-            x}{d^2} & -1 & 0 \end{bmatrix} $$</div>
-          <p style="font-size: 0.8rem; color: var(--text-secondary);">where Δx = l<sub>x</sub> − x, Δy = l<sub>y</sub> −
-            y, d = √(Δx² + Δy²)</p>
-
-          <p><strong>Kalman Gain &amp; Update Step</strong></p>
-          <div class="katex-block">$$ \mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k
-            \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1} $$</div>
-          <div class="katex-block">$$ \mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k \left( \mathbf{z}_k -
-            h(\mathbf{x}_k^-) \right) $$</div>
-          <div class="katex-block">$$ \mathbf{P}_k^+ = \left( \mathbf{I} - \mathbf{K}_k \mathbf{H}_k \right)
-            \mathbf{P}_k^- $$</div>
-
-          <p><strong>Key Insight:</strong> Because both <strong>f</strong> and <strong>h</strong> are non-linear, we
-            linearize them via their Jacobians at each timestep — this is what makes the filter <em>Extended</em>. The
-            Jacobians capture the local slope of the non-linear functions, enabling approximately optimal fusion of
-            non-linear models and measurements.</p>
-        </div>
-      </details>
-
-    </div>
-
-    <!-- ===== FOOTER ===== -->
-    <footer style="text-align: center; padding: 24px 0 8px; font-size: 0.75rem; color: var(--text-secondary);">
-      Built with p5.js, math.js &amp; KaTeX — Portfolio demonstration for Technical Sales Management
-    </footer>
+  <!-- ===== FOOTER ===== -->
+  <footer style="text-align: center; padding: 24px 0 8px; font-size: 0.75rem; color: var(--text-secondary);">
+    Built with p5.js, math.js &amp; KaTeX — Portfolio demonstration for Technical Sales Management
+  </footer>
   </div>
 
   <script src="script.js"></script>
