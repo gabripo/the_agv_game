@@ -1259,11 +1259,23 @@ function routeComplete() {
 // ============================================================
 // SAVINGS CALCULATOR
 // ============================================================
+const SENSOR_COST = { wheel: 200, lidar: 5000, gps: 800, beacon: 150 };
+
+function getSensorBOMCost() {
+  let cost = 0;
+  if (sensorWheelEnabled) cost += SENSOR_COST.wheel;
+  if (sensorLidarEnabled) cost += SENSOR_COST.lidar;
+  if (sensorGpsEnabled) cost += SENSOR_COST.gps;
+  cost += externalSensors.length * SENSOR_COST.beacon;
+  return cost;
+}
+
 function calculateSavings(ekfInstance) {
   const filter = ekfInstance || ekf;
   if (!filter) return 0;
   const sigma = Math.min(filter.getPositionSigma(), MAX_SAVINGS_SIGMA);
-  return 0.40 * Math.max(0, 1 - sigma / MAX_SAVINGS_SIGMA);
+  const perfFactor = 0.40 * Math.max(0, 1 - sigma / MAX_SAVINGS_SIGMA);
+  return perfFactor;
 }
 
 // ============================================================
@@ -1310,14 +1322,16 @@ function updateMetrics() {
   divergenceEl.textContent = d.toFixed(1) + ' px';
   divergenceEl.className = 'metric-value ' + (d < 30 ? 'good' : d < 60 ? 'warn' : 'bad');
 
-  const savingsPct = (savings * 100).toFixed(0);
+  const bomCost = getSensorBOMCost();
+  const dollarSavings = Math.round(savings * bomCost);
+  const savingsPct = (dollarSavings / (bomCost || 1) * 100).toFixed(0);
   savingsPercentEl.textContent = savingsPct + '%';
   savingsBarEl.style.width = savingsPct + '%';
 
-  const dollarSavings = Math.round(savings * LIDAR_COST);
   savingsNarrativeEl.innerHTML =
-    `At this tuning level, each AGV saves approximately <strong>~$${dollarSavings}</strong> ` +
-    `in lidar specification costs, reducing BOM by <strong>${savingsPct}%</strong> per unit.`;
+    `EKF tuning saves <strong>${savingsPct}%</strong> on your current sensor BOM ` +
+    `(<strong>$${bomCost}</strong>: ${sensorWheelEnabled ? 'odom $200 ' : ''}${sensorLidarEnabled ? 'lidar $5000 ' : ''}${sensorGpsEnabled ? 'gps $800 ' : ''}${externalSensors.length > 0 ? externalSensors.length + ' beacons $' + (externalSensors.length * 150) : ''}).<br>` +
+    `Each unit saves <strong>~$${dollarSavings}</strong> at this tuning level.`;
 
   // Status
   if (isInCorridor(simTime)) {
