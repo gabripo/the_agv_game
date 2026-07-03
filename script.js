@@ -1520,7 +1520,8 @@ function resetSimulation() {
 }
 
 function resetConfig() {
-  if (running || completed || crashed) return;
+  if (running) return;
+  if (completed || crashed) resetSimulation();
 
   // Sensor toggles and sliders
   document.getElementById('sensorWheelOdometry').checked = true;
