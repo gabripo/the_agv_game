@@ -3,25 +3,25 @@
 ## 1. System Overview
 
 ```
-┌─────────────────────────────────┬──────────────────────────────┐
-│   Left Column (3fr)            │ Right Column: Dashboard (2fr) │
-│  ┌───────────────────────────┐ │ ┌──────────────────────────┐ │
-│  │  p5.js Canvas             │ │ │  RUN SIMULATION Button       │ │
-│  │  (warehouse + AGV sim)    │ │ │  AGV Speed Slider        │ │
-│  │                           │ │ │  Stop on Divergence Tog  │ │
-│  ├───────────────────────────┤ │ │  ▲ Sensors Config (det)  │ │
-│  │  Result Panel             │ │ │  ├ Interior (odometry)   │ │
-│  │  (game-over / success)    │ │ │  └ Exterior (LIDAR,GPS,  │ │
-│  ├───────────────────────────┤ │ │        beacons + range)  │ │
-│  │  Sensor Explanations      │ │ │  ▲ Route Config (det)    │ │
-│  │  (odometry, LIDAR, GPS)   │ │ │  ├ A/B drag markers     │ │
-│  ├───────────────────────────┤ │ │  └ Slip mode selector   │ │
-│  │  ▲ EKF Accordion          │ │ │  Live Metrics            │ │
-│  │  ├ Executive              │ │ │  Hardware Savings        │ │
-│  │  ├ Engineer               │ │ │  Business Impact         │ │
-│  │  └ Specialist (KaTeX)     │ │ └──────────────────────────┘ │
-│  └───────────────────────────┘ │                              │
-└─────────────────────────────────┴──────────────────────────────┘
+┌─────────────────────────────────┬──────────────────────────────────┐
+│   Left Column (3fr)            │ Right Column: Dashboard (2fr)     │
+│  ┌───────────────────────────┐ │ ┌──────────────────────────────┐  │
+│  │  p5.js Canvas             │ │ │  RUN SIMULATION Button       │  │
+│  │  (warehouse + AGV sim)    │ │ │  AGV Speed Slider           │  │
+│  │  GPS/IMU indicators       │ │ │  + A/B coordinate display   │  │
+│  ├───────────────────────────┤ │ │  Stop on Divergence Toggle  │  │
+│  │  Result Panel             │ │ │  ▼ Sensors Config (coll)    │  │
+│  │  (game-over / success)    │ │ │  ├ Interior (odometry, IMU) │  │
+│  ├───────────────────────────┤ │ │  └ Exterior (LIDAR, GPS,   │  │
+│  │  ▼ EKF Accordion (coll)  │ │ │       beacons + range)      │  │
+│  │  ├ Executive              │ │ │  ▼ Route Config (coll)      │  │
+│  │  ├ Engineer               │ │ │  ├ A/B drag markers        │  │
+│  │  └ Specialist (KaTeX)     │ │ │  └ Slip mode selector      │  │
+│  │    + symbol legend spoiler│ │ │  ▼ Live Metrics (coll)      │  │
+│  └───────────────────────────┘ │ │  ▼ Hardware Savings (coll) │  │
+│                                │ │  ▼ Business Impact (coll)  │  │
+│                                │ └──────────────────────────────┘  │
+└─────────────────────────────────┴──────────────────────────────────┘
 
 CDN: p5.js | math.js | KaTeX        Tests: Mocha + Chai + Playwright
 ```
@@ -47,6 +47,7 @@ p5.js draw()
     ├─ 4. Get visible landmarks (empty in corridor)
     ├─ 5. If landmark + LIDAR enabled: noisy measurement → EKF.update(meas, lm)
     ├─ 6. If GPS enabled + outside corridor: noisy GPS → EKF.gpsUpdate()
+    ├─ 6b. If IMU enabled: noisy heading → EKF.imuUpdate() (always available, interior)
     ├─ 7. For each external sensor (beacon): if within range + LIDAR enabled + outside corridor: direct position update → EKF.gpsUpdate()
     ├─ 8. Compute divergence & uncertainty
     ├─ 9. Check divergence (>60px from true) → gameOver('divergence')
@@ -157,13 +158,34 @@ $$\mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k (\mathbf{z}_k - h(\mathbf{x}_k^
 
 $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
-### 3.9 Covariance Matrices
+### 3.9 IMU Heading Update
 
-| Matrix | Dimension | Description | Default | Slider Range |
-|--------|-----------|-------------|---------|--------------|
-| `Q` | 4×4 diagonal | Process noise (trust model) | diag(0.1, 0.1, 0.05, 0.02) | 0.01 – 5.0× default |
-| `R` | 2×2 diagonal | Measurement noise (trust sensors) | diag(0.5, 0.5) | 0.01 – 5.0× default |
+The `imuUpdate()` method is a direct heading observation using a 1×4 Jacobian:
+
+$$\mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0 \end{bmatrix}$$
+
+| Symbol | Dim | Description |
+|--------|-----|-------------|
+| `z_θ` | 1×1 | Heading measurement (true heading + noise) |
+| `R_imu` | 1×1 | Heading noise variance (∝ 1/accuracy) |
+| `H_imu` | 1×4 | Selects θ from state vector |
+
+The update follows standard EKF equations but operates on the scalar heading innovation with angle normalization:
+
+$$\text{innov} = \text{normalizeAngle}(z_\theta - \hat{\theta}^-)$$
+
+$$\mathbf{K} = \mathbf{P}^- \mathbf{H}_{\text{imu}}^\mathsf{T} (\mathbf{H}_{\text{imu}} \mathbf{P}^- \mathbf{H}_{\text{imu}}^\mathsf{T} + R_{\text{imu}})^{-1}$$
+
+$$\mathbf{x}^+ = \mathbf{x}^- + \mathbf{K} \cdot \text{innov}$$
+
+### 3.10 Covariance Matrices
+
+| Matrix | Dimension | Description | Default | Slider Mapping |
+|--------|-----------|-------------|---------|----------------|
+| `Q` | 4×4 diagonal | Process noise (trust model) | diag(0.1, 0.1, 0.05, 0.02) | Slider 0–100 → Q = default × 10^(1 − accuracy/50) |
+| `R` | 2×2 diagonal | Measurement noise (trust sensors) | diag(0.5, 0.5) | Slider 0–100 → R = default × 10^(1 − accuracy/50) |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
+| `R_imu` | 1×1 | IMU heading noise | — | ∝ 1/accuracy; 0 → ∞, 100 → 0 |
 
 ---
 
@@ -171,7 +193,7 @@ $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
 ### 4.1 Trajectory
 
-The reference path is a cubic Bézier curve from Point A (150, 440) to Point B (700, 160) with control points at (280, 440) and (500, 300). The trajectory is pre-computed at integer timesteps and interpolated with linear interpolation between steps.
+The reference path is a cubic Bézier curve from **Point A (150, 400)** to **Point B (700, 160)** with control points at (280, 440) and (500, 300). These defaults are restored on Reset Configuration; users can also drag the A/B markers on the canvas to reposition. The trajectory is pre-computed at integer timesteps and interpolated with linear interpolation between steps.
 
 Each trajectory point stores `{x, y, theta, v}` where `v = agvSpeed` (configurable via slider, range 0.5–5.0).
 
@@ -181,6 +203,8 @@ Each trajectory point stores `{x, y, theta, v}` where `v = agvSpeed` (configurab
 
 `simTime` advances by `DT × (agvSpeed / 2.0)` per frame. At speed 5.0, the simulation completes 2.5× faster (≈2.7s). The EKF predict still runs once per frame, so higher speed means less computation per unit path length — making the corridor genuinely harder to navigate at speed.
 
+A coordinate display below the AGV speed slider shows the current A start / B end positions (e.g., `(150, 400) → (700, 160)`), updated when route points are dragged on the canvas.
+
 ### 4.3 The Corridor Trap
 
 | Aspect | Implementation |
@@ -189,6 +213,7 @@ Each trajectory point stores `{x, y, theta, v}` where `v = agvSpeed` (configurab
 | **LIDAR landmark dropout** | `getVisibleLandmarks()` returns empty array inside corridor |
 | **GPS dropout** | GPS update gated by `!isInCorridor(simTime)` |
 | **Beacon dropout** | External sensor position updates gated by `!isInCorridor(simTime)` |
+| **IMU availability** | Interior sensor — always available, even inside corridor (uncorrupted heading) |
 | **Control corruption** | `getCorruptedControl()` subtracts a sinusoidal steering bias (max 0.015 rad/timestep) from the nominal `thetaDot` during the corridor window |
 | **Noise** | Small random noise (±0.002 rad/timestep) added to prevent exact reproducibility |
 
@@ -236,6 +261,7 @@ BOM cost = Σ enabled sensor costs:
   wheel  = $200
   lidar  = $5,000
   gps    = $800
+  imu    = $3,000
   beacon = $150 each
 
 dollar_savings = round(perfFactor × BOM_cost)
@@ -262,6 +288,8 @@ The dollar savings scale with the actual sensor configuration: more/better senso
 9. Raw sensor measurement (red dot + landmark line)
 10. True AGV (ghost, 25% opacity)
 11. EKF AGV (solid blue, direction indicator with LIDAR sweep arc)
+    - GPS active indicator (green dot + "GPS" label) above EKF when GPS on
+    - IMU active indicator (green dot + "IMU" label) above EKF when IMU on
 12. Red flash overlay (on collision/divergence)
 ```
 
@@ -271,8 +299,9 @@ The dollar savings scale with the actual sensor configuration: more/better senso
 
 | File | Responsibility |
 |------|---------------|
-| `index.html` | DOM structure, CSS (~580 lines), CDN script tags, 3-tier accordion with KaTeX |
-| `script.js` | `EKFSlam` class (150+ lines), simulation world (120+ lines), p5.js setup/draw (100+ lines), rendering (280+ lines), UI/dashboard (200+ lines), sensor/business logic, Node.js exports |
+| `index.html` | DOM structure, CDN script tags, 3-tier accordion with KaTeX, sensor/route/metrics/savings HTML |
+| `styles.css` | All styles (~710 lines): layout grid, dashboard cards, accordion, sliders, responsive breakpoints, animations |
+| `script.js` | `EKFSlam` class (including `imuUpdate`, `gpsUpdate`), simulation world, p5.js setup/draw, rendering (GPS/IMU indicators), UI/dashboard, sensor/business logic, Node.js exports |
 | `tests/setup.js` | Provides `global.math` from npm `mathjs` package |
 | `tests/test_ekf.js` | 28 unit tests for the EKF class |
 | `tests/test_functions.js` | 17 unit tests for pure simulation functions |
@@ -371,7 +400,7 @@ The e2e test (`tests/headless_test.js`) uses **Playwright** with **Firefox** in 
 |-------|-------------------|
 | Canvas renders | `document.querySelectorAll('canvas').length > 0` and the canvas has non-zero pixel content |
 | p5.js initialised | `typeof setup === 'function' && typeof draw === 'function'` |
-| Slider defaults | Q=1.0 and R=1.0 at initial state |
+| Slider defaults | All accuracy sliders at 1.0, wheel/lidar on, GPS/IMU off, LIDAR range 400, speed 2.0 |
 | Mode selector | Deterministic mode is active by default |
 | Start button | Enabled, labeled "▶ RUN SIMULATION" |
 | Click triggers run | After clicking, `running = true`, `simTime` advances |

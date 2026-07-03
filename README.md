@@ -16,13 +16,17 @@ This single-page web application simulates an Automated Guided Vehicle (AGV) nav
 ### Key Features
 
 - **Interactive EKF Simulation** — Real-time 2D visualization of true position, raw sensor measurements, and the EKF-estimated state
-- **Sensor Configuration** — Enable/disable wheel odometry, LIDAR, and GPS independently; adjust per-sensor accuracy; control LIDAR detection range; add/remove visual beacons on the map
+- **Sensor Configuration** — Enable/disable wheel odometry, LIDAR, GPS, and IMU independently; adjust per-sensor accuracy (0–100 sliders, mapped to inverse noise covariance); control LIDAR detection range; add/remove visual beacons on the map
 - **The Trap** — A featureless corridor where landmarks vanish, GPS/LIDAR/beacon measurements drop out, and the control input is corrupted (simulating wheel slip on a slippery floor)
 - **Collision Physics** — A poorly-tuned filter causes the EKF estimate to diverge into warehouse racking, triggering a Game Over with distinct collision vs. divergence messages
-- **Hardware Savings Calculator** — Computes BOM savings based on EKF position covariance and the actual sensor configuration (savings = EKF quality × sensor BOM cost)
+- **Hardware Savings Calculator** — Computes BOM savings based on EKF position covariance and the actual sensor configuration (savings = EKF quality × sensor BOM cost). BOM includes wheel ($200), lidar ($5,000), gps ($800), imu ($3,000), and beacons ($150 ea.)
 - **AGV Speed Control** — Slider to adjust traversal speed; higher speed makes the corridor harder to navigate
 - **Stop on Divergence** — Toggle to enable/disable the 60px divergence threshold stop
-- **Three-Tier Explanatory Accordion** — Executive (business analogy), Engineer (predict-update loop), Specialist (full EKF math with KaTeX-rendered equations) — displayed below the map
+- **Three-Tier Explanatory Accordion** — Executive (business analogy), Engineer (predict-update loop), Specialist (full EKF math with KaTeX-rendered equations and symbol legend spoiler) — displayed below the map
+- **Reset Configuration** — One-click restore of all defaults (sensor toggles, accuracy sliders, route points, speed, corridor mode)
+- **Coordinate Display** — Live A (start) / B (end) coordinate readout below the AGV speed slider
+- **GPS & IMU Indicators** — Green dots and labels above the EKF estimate on canvas when GPS or IMU are active
+- **Dynamic Slider Feedback** — Slider backgrounds transition red→yellow→green proportionally; tooltips explain the accuracy→covariance mapping
 
 ### Technology Stack
 
@@ -65,7 +69,7 @@ Opens at [http://localhost:8080](http://localhost:8080).
 
 ## Usage
 
-1. **Configure sensors** — Toggle wheel odometry, LIDAR, GPS, and beacons on/off. Adjust per-sensor accuracy (higher = more accurate = lower noise) and LIDAR detection range.
+1. **Configure sensors** — Toggle wheel odometry, LIDAR, GPS, IMU, and beacons on/off. Adjust per-sensor accuracy (0–100 sliders, higher = more accurate = lower noise) and LIDAR detection range.
 2. **Set AGV speed** — Slider below RUN SIMULATION controls how fast the AGV traverses the path. Higher speed = fewer frames in the corridor = harder to navigate.
 3. **Select slip mode** — Deterministic (fixed timing) or Semi-Random (variable timing within corridor zone).
 4. **(Optional) Toggle "Stop on divergence"** — When checked, the simulation stops if the EKF estimate drifts >60px from the true position. Uncheck to let the run continue (collision/off-canvas stops still apply).
@@ -91,10 +95,13 @@ Opens at [http://localhost:8080](http://localhost:8080).
 |---------|----------|-------------|
 | **AGV Speed** | Below RUN SIMULATION button | Traversal speed (0.5–5.0). Scales `simTime` advance rate. Higher = faster = fewer frames in corridor. |
 | **Stop on divergence** | Below speed slider | When checked, stops simulation if EKF estimate >60px from true position. |
-| **Wheel Odometry** | Sensors Configuration > Interior | Toggle on/off. Accuracy slider (0.1–5.0) scales process noise Q. |
-| **LIDAR** | Sensors Configuration > Exterior | Toggle on/off. Accuracy slider scales measurement noise R. Range slider (100–600px) controls detection radius. |
-| **GPS** | Sensors Configuration > Exterior | Toggle on/off. Accuracy slider scales GPS position noise. **Disabled inside corridor.** |
+| **Wheel Odometry** | Sensors Configuration > Interior | Toggle on/off. Accuracy slider (0–100) scales process noise Q. |
+| **IMU** | Sensors Configuration > Interior | Toggle on/off (off by default). Accuracy slider (0–100) scales heading measurement noise. Always available (interior sensor, works in corridor). Cost: $3,000. |
+| **LIDAR** | Sensors Configuration > Exterior | Toggle on/off. Accuracy slider (0–100) scales measurement noise R. Range slider (100–600px) controls detection radius. |
+| **GPS** | Sensors Configuration > Exterior | Toggle on/off. Accuracy slider (0–100) scales GPS position noise. **Disabled inside corridor.** |
 | **Beacons** | Sensors Configuration > Exterior | Default 5 placed on map. Add/remove via button. Each has an accuracy slider. Provide GPS-style position updates. |
+| **Reset Configuration** | Below Sensors Configuration | Restores all defaults: sensors, accuracy, speed, route, slip mode, beacons, corridor params. |
+| **Coordinate Display** | Below AGV speed slider | Shows A start / B end positions (e.g., (150, 400) → (700, 160)). |
 | **Slip Mode** | Route Configuration | Deterministic (fixed) or Semi-Random (variable onset/offset within corridor). |
 | **Route A/B** | Route Configuration | Drag green (A) and blue (B) markers on the map to reposition start/end. |
 
@@ -102,7 +109,8 @@ Opens at [http://localhost:8080](http://localhost:8080).
 
 ```
 the_agv_game/
-├── index.html                  # Single-page app (HTML + CSS)
+├── index.html                  # Single-page app (HTML + CDN script tags)
+├── styles.css                  # All styles (CSS Grid/Flexbox, ~710 lines)
 ├── script.js                   # All JS: EKF, p5.js, UI, dashboard
 ├── design_choices.md           # Design decisions & rationale
 ├── implementation_plan.md      # Development plan & architecture

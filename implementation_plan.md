@@ -4,7 +4,8 @@
 
 ```
 the_agv_game/
-├── index.html              # All HTML + embedded CSS + CDN script tags
+├── index.html              # Single-page app HTML + CDN script tags
+├── styles.css              # All styles (layout, cards, accordion, sliders, responsive)
 ├── script.js               # All JS: EKF core + p5.js simulation + dashboard logic
 ├── design_choices.md       # Design decisions document
 ├── docs/architecture.md    # Technical architecture deep-dive
@@ -17,7 +18,7 @@ the_agv_game/
 
 ---
 
-## Build Order (14 Steps)
+## Build Order (16 Steps)
 
 ### Phase 1: EKF Math Engine
 
@@ -40,6 +41,8 @@ the_agv_game/
 - `predictMeasurement(landmark)` — range + bearing from state to landmark
 - `jacobianH(state, landmark)` — 2×4 analytic Jacobian of measurement model
 - `update(measurement, landmark)` — standard EKF update equations
+- `gpsUpdate(measurement)` — direct position update (4-element [x, y, σx, σy])
+- `imuUpdate(thetaMeasured, noiseTheta)` — direct heading observation (H = [0,0,1,0])
 - `setTuning(Qscale, Rscale)` — scale diagonal entries of Q and R
 
 #### Step 3 — Console unit-test
@@ -76,7 +79,10 @@ the_agv_game/
   - Add Gaussian noise scaled by R diagonal
   - **Outside corridor:** pass measurement to EKF update
   - **Inside corridor:** skip measurement (simulate featureless environment)
+  - **GPS:** if enabled + outside corridor, generate noisy [x, y, σx, σy] → `EKF.gpsUpdate()`
+  - **IMU:** if enabled, generate noisy heading → `EKF.imuUpdate()` (always available, interior)
 - Render raw measurements as red dots at `(ekf.state.x, ekf.state.y) + noisy_range_bearing`
+- Render GPS active indicator (green dot + "GPS") and IMU active indicator (green dot + "IMU") on EKF estimate
 
 #### Step 7 — Wire EKF into draw loop
 ```js
@@ -100,6 +106,18 @@ function draw() {
   if (landmark && !inCorridor(t)) {
     measurement = noisyRangeBearing(trueState, landmark);
     ekf.update(measurement, landmark);
+  }
+
+  // GPS update (exterior, disabled in corridor)
+  if (gpsEnabled && !inCorridor(t)) {
+    noisyGPS = getNoisyGps(trueState, gpsAccuracy);
+    ekf.gpsUpdate(noisyGPS);
+  }
+
+  // IMU heading update (interior, always available)
+  if (imuEnabled) {
+    noisyHeading = trueState.theta + headingNoise;
+    ekf.imuUpdate(noisyHeading, noiseVariance);
   }
 
   // Collision check
@@ -127,13 +145,16 @@ function draw() {
 
 ### Phase 3: UI & Dashboard
 
-#### Step 9 — Slider controls with explanation tooltips
-- **Q slider:** Label "Process Noise (Trust Odometry)" with range 0.01–10.0
-  - Tooltip: *"Low Q = robot trusts its wheel encoders. Risky on slippery floors."*
-- **R slider:** Label "Measurement Noise (Trust Sensors)" with range 0.01–10.0
-  - Tooltip: *"Low R = robot trusts landmark detections. Problems in featureless areas."*
-- Live values displayed next to each slider
-- Visual hint: thumb color shifts from green (low) to red (high) as slider increases
+#### Step 9 — Sensor toggles & accuracy sliders
+- Interior: Wheel Odometry (on by default), IMU (off by default)
+- Exterior: LIDAR (on by default), GPS (off by default), Beacons (5 default)
+- Each sensor has:
+  - Enable/disable toggle
+  - Accuracy slider (0–100, default 1.0) — maps to inverse noise covariance (σ ∝ 1/accuracy)
+  - Dynamic red→yellow→green gradient background fill proportional to value
+  - Tooltip and `ⓘ` info button explaining the accuracy→covariance mapping
+- LIDAR also has a range slider (100–600px, default 400)
+- Each beacon has its own accuracy slider
 
 #### Step 10 — Slip mode selector
 - Radio group: `[Deterministic] [Semi-Random]`
@@ -142,7 +163,7 @@ function draw() {
 
 #### Step 11 — START button
 - Label: "▶ RUN SIMULATION"
-- Disabled until at least one run-through of sliders (both sliders moved once)
+- Also: "Reset Configuration" button to restore all defaults
 - On click:
   - Lock sliders + mode selector (visual lock overlay)
   - Set `running = true`
@@ -150,24 +171,29 @@ function draw() {
 - After game over or success: button relabels to "TUNE AGAIN" and re-enables sliders
 
 #### Step 12 — Live metrics panel
-- **Position Uncertainty:** `trace(P[0:2, 0:2]).toFixed(4)` — updated every frame
-- **Sensor Cost Savings:** percentage + progress bar
 - **Status indicator:** LED-style dot: green = OK, yellow = corridor (warning), red = diverging
+  - Description text explaining Status, Uncertainty, and Divergence fields
+- **Position Uncertainty:** `trace(P[0:2, 0:2]).toFixed(4)` — updated every frame
+- **Divergence:** current EKF position error in pixels
+- **Sensor Cost Savings:** percentage + progress bar
 
 #### Step 13 — Hardware Savings Calculator
 - Formula: `savings = 0.40 × max(0, 1 − trace(P[0:2,0:2]) / σ_max)`
+- BOM formula (KaTeX): `BOM = C_wheel + C_lidar + C_gps + C_imu + n_beacon × C_beacon`
+- Formula spoiler: Sensor costs listed (wheel $200, lidar $5,000, gps $800, imu $3,000, beacon $150 ea.)
 - Display: percentage number + a horizontal gradient bar (red → yellow → green)
-- Dynamic text beneath: *"At this tuning level, each AGV saves ~$X in lidar specification costs, reducing BOM by Y%."*
-- X and Y computed from savings percentage against a hypothetical $5,000 lidar cost
+- Dynamic text beneath: *"At this tuning level, each AGV saves ~$X in sensor specification costs, reducing BOM by Y%."*
+- Savings scale with actual sensor configuration
 
-#### Step 14 — Explanatory accordion (3 tiers)
-- Using `<details>` / `<summary>` HTML elements (zero JS required)
+#### Step 14 — Explanatory accordion (3 tiers) + spoilers
+- All accordions start **collapsed** using `<details>` / `<summary>` HTML elements
 - **Executive:** Short paragraph with dark-room analogy
 - **Engineer:** Predict-Update loop explanation, covariance matrices explained as confidence scores
 - **Specialist:** KaTeX-rendered equations:
   - `K_k = P_k^- H_k^T (H_k P_k^- H_k^T + R_k)^{-1}`
   - `x_k^+ = x_k^- + K_k (z_k - h(x_k^-))`
   - Jacobian definition: `F_k = ∂f/∂x |_{x_{k-1}, u_k}`
+  - Nested "Symbol legend" spoiler with KaTeX definitions for each variable
 
 ---
 
@@ -196,8 +222,10 @@ function draw() {
 | `P` | 4×4 | State covariance |
 | `F` | 4×4 | Jacobian of motion model |
 | `Q` | 4×4 | Process noise covariance (diagonal) |
-| `H` | 2×4 | Jacobian of measurement model |
+| `H` | 2×4 | Jacobian of measurement model (range-bearing) |
 | `R` | 2×2 | Measurement noise covariance (diagonal) |
+| `H_imu` | 1×4 | IMU Jacobian `[0, 0, 1, 0]` (selects θ) |
+| `R_imu` | 1×1 | IMU heading noise variance |
 | `K` | 4×2 | Kalman Gain |
 | `S` | 2×2 | Innovation covariance |
 | `z` | 2×1 | Measurement vector `[range, bearing]ᵀ` |
@@ -208,17 +236,35 @@ function draw() {
 ## State Machine
 
 ```
-IDLE → (user tunes sliders, selects mode) → READY → (press START) → RUNNING
-                                                                    ↓
-                                                            CORRIDOR_ENTRY
-                                                                    ↓
-                                                            (landmarks lost)
-                                                                    ↓
-                                                            RECOVERY or DIVERGENCE
-                                                                    ↓
-                                                          SUCCESS or GAME_OVER
-                                                                    ↓
-                                                            (press TUNE AGAIN)
-                                                                    ↓
-                                                                    IDLE
+IDLE ──(tune sliders, select mode, place beacons, configure route)──→ READY
+                                                                        │
+                                                                  (press DEPLOY)
+                                                                        │
+                                                                        ▼
+                                                                    RUNNING
+                                                                        │
+                                                          ┌─────────────┼──────────────┐
+                                                          │             │              │
+                                                          ▼             ▼              ▼
+                                                   CORRIDOR_ENTRY  CORRIDOR_EXIT   DIVERGENCE
+                                                   (no landmarks,   (landmarks     │
+                                                    slip + corrupt   return)       │
+                                                    control, IMU     │              │
+                                                    still active)    │              │
+                                                          │             │              │
+                                                          └──────┬──────┘              │
+                                                                 │                     │
+                                                                 ▼                     ▼
+                                                          (recovery)             GAME_OVER
+                                                                 │                     │
+                                                                 ▼                     │
+                                                          SUCCESS                    │
+                                                                 │                     │
+                                                                 └──────┬──────────────┘
+                                                                        │
+                                                                  (press TUNE AGAIN
+                                                                   or RESET CONFIG)
+                                                                        │
+                                                                        ▼
+                                                                      IDLE
 ```

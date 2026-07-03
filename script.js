@@ -1113,6 +1113,19 @@ function drawEKFEstimate() {
     text('GPS', 0, -34);
   }
 
+  // IMU active indicator
+  if (sensorImuEnabled && running) {
+    noStroke();
+    fill(46, 204, 113, 200);
+    circle(0, -40, 5);
+    fill(46, 204, 113, 100);
+    circle(0, -40, 9);
+    fill(46, 204, 113, 220);
+    textSize(6);
+    textFont('monospace');
+    text('IMU', 0, -48);
+  }
+
   pop();
 
   // LIDAR range visualization
