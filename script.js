@@ -990,9 +990,11 @@ function renderExternalSensorList() {
       '<button class="btn-remove-sensor" data-id="' + s.id + '">&times;</button>';
     const slider = row.querySelector('.sensor-slider');
     const valSpan = row.querySelector('.sensor-value');
+    updateSliderBg(slider);
     slider.addEventListener('input', function () {
       s.accuracy = parseFloat(this.value);
       valSpan.textContent = s.accuracy.toFixed(2);
+      updateSliderBg(this);
     });
     row.querySelector('.btn-remove-sensor').addEventListener('click', function () {
       externalSensors = externalSensors.filter(ext => ext.id !== s.id);
@@ -1489,6 +1491,7 @@ function resetConfig() {
   updateSliderBg(document.getElementById('lidarAccuracy'));
   document.getElementById('lidarRange').value = '400';
   document.getElementById('lidarRangeValue').textContent = '400';
+  updateSliderBg(document.getElementById('lidarRange'));
 
   document.getElementById('sensorGps').checked = false;
   document.getElementById('gpsAccuracy').value = '1.0';
@@ -1504,6 +1507,7 @@ function resetConfig() {
   document.getElementById('agvSpeed').value = '2.0';
   document.getElementById('speedValue').textContent = '2.0';
   agvSpeed = 2.0;
+  updateSliderBg(document.getElementById('agvSpeed'));
 
   document.getElementById('allowDivergence').checked = true;
 
@@ -1559,9 +1563,9 @@ function updateSliderBg(slider) {
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', function () {
     const speedEl = document.getElementById('agvSpeed');
-    if (speedEl) agvSpeed = parseFloat(speedEl.value);
+    if (speedEl) { agvSpeed = parseFloat(speedEl.value); updateSliderBg(speedEl); }
     const rangeEl = document.getElementById('lidarRange');
-    if (rangeEl) lidarRange = parseFloat(rangeEl.value);
+    if (rangeEl) { lidarRange = parseFloat(rangeEl.value); updateSliderBg(rangeEl); }
     updateCoordDisplay();
     function setupSensorListener(name) {
       const accId = name + 'Accuracy';
@@ -1597,6 +1601,7 @@ if (typeof document !== 'undefined') {
     document.getElementById('agvSpeed').addEventListener('input', function () {
       agvSpeed = parseFloat(this.value);
       document.getElementById('speedValue').textContent = agvSpeed.toFixed(1);
+      updateSliderBg(this);
       if (!running) {
         buildTrajectory();
       }
@@ -1605,6 +1610,7 @@ if (typeof document !== 'undefined') {
     document.getElementById('lidarRange').addEventListener('input', function () {
       lidarRange = parseFloat(this.value);
       document.getElementById('lidarRangeValue').textContent = lidarRange;
+      updateSliderBg(this);
     });
 
     document.getElementById('btnAddBeacon').addEventListener('click', function () {

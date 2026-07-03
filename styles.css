@@ -578,7 +578,6 @@ input[type="number"]:focus {
 .sensor-slider {
   flex: 1;
   min-width: 60px;
-  max-width: 140px;
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
