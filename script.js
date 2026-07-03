@@ -484,6 +484,7 @@ function initSimulation() {
 }
 
 let dragTarget = null;
+let dragRackIdx = -1;
 
 function getNearestTrajectoryIndex(mx, my) {
   let minDist = Infinity;
@@ -564,6 +565,17 @@ function mousePressed() {
       return false;
     }
   }
+
+  // Drag racks
+  for (let i = 0; i < racks.length; i++) {
+    const r = racks[i];
+    if (mouseX > r.x - r.w / 2 - 6 && mouseX < r.x + r.w / 2 + 6 &&
+        mouseY > r.y - r.h / 2 - 6 && mouseY < r.y + r.h / 2 + 6) {
+      dragTarget = 'rack';
+      dragRackIdx = i;
+      return false;
+    }
+  }
 }
 
 function mouseDragged() {
@@ -597,12 +609,17 @@ function mouseDragged() {
       s.y = constrain(mouseY, 20, height - 20);
       renderExternalSensorList();
     }
+  } else if (dragTarget === 'rack' && dragRackIdx >= 0 && dragRackIdx < racks.length) {
+    const r = racks[dragRackIdx];
+    r.x = constrain(mouseX, 20, width - 20);
+    r.y = constrain(mouseY, 20, height - 20);
   }
 }
 
 function mouseReleased() {
   dragTarget = null;
   dragSensorId = null;
+  dragRackIdx = -1;
 }
 
 // ============================================================
@@ -786,18 +803,32 @@ function drawWarehouse() {
 }
 
 function drawRacks() {
-  for (const rack of racks) {
+  const idle = !running && !completed && !crashed;
+  for (let i = 0; i < racks.length; i++) {
+    const rack = racks[i];
+    const hover = idle &&
+      mouseX > rack.x - rack.w / 2 - 6 && mouseX < rack.x + rack.w / 2 + 6 &&
+      mouseY > rack.y - rack.h / 2 - 6 && mouseY < rack.y + rack.h / 2 + 6;
+
+    // Highlight on hover
+    if (hover) {
+      noFill();
+      stroke(52, 152, 219, 100);
+      strokeWeight(2);
+      rect(rack.x, rack.y, rack.w + 6, rack.h + 6, 5);
+    }
+
     // Shelf body
     fill(60, 70, 85);
-    stroke(80, 92, 110);
-    strokeWeight(1);
+    stroke(hover ? 52 : 80, hover ? 152 : 92, hover ? 219 : 110);
+    strokeWeight(hover ? 2 : 1);
     rect(rack.x, rack.y, rack.w, rack.h, 3);
 
     // Hazard stripes
-    for (let i = -rack.w / 2; i < rack.w / 2; i += 8) {
+    for (let j = -rack.w / 2; j < rack.w / 2; j += 8) {
       fill(231, 76, 60, 60);
       noStroke();
-      rect(rack.x + i, rack.y, 4, rack.h, 1);
+      rect(rack.x + j, rack.y, 4, rack.h, 1);
     }
   }
 }
