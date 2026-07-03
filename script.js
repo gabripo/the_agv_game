@@ -1394,6 +1394,57 @@ function resetSimulation() {
   document.getElementById('app').classList.remove('locked');
 }
 
+function resetConfig() {
+  if (running || completed || crashed) return;
+
+  // Sensor toggles and sliders
+  document.getElementById('sensorWheelOdometry').checked = true;
+  document.getElementById('wheelOdometryAccuracy').value = '1.0';
+  document.getElementById('wheelOdometryValue').textContent = '1.00';
+
+  document.getElementById('sensorLidar').checked = true;
+  document.getElementById('lidarAccuracy').value = '1.0';
+  document.getElementById('lidarValue').textContent = '1.00';
+  document.getElementById('lidarRange').value = '400';
+  document.getElementById('lidarRangeValue').textContent = '400';
+
+  document.getElementById('sensorGps').checked = false;
+  document.getElementById('gpsAccuracy').value = '1.0';
+  document.getElementById('gpsValue').textContent = '1.00';
+
+  // Other controls
+  document.getElementById('agvSpeed').value = '2.0';
+  document.getElementById('speedValue').textContent = '2.0';
+  agvSpeed = 2.0;
+
+  document.getElementById('allowDivergence').checked = true;
+
+  // Route — reset start/end points and corridor markers
+  startPoint = { x: 150, y: 440 };
+  endPoint = { x: 700, y: 160 };
+  userCorridorStart = CORRIDOR_T_START;
+  userCorridorEnd = CORRIDOR_T_END;
+  slipMode = 'deterministic';
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.mode-btn[data-mode="deterministic"]').classList.add('active');
+  const params = document.getElementById('corridorParams');
+  if (params) params.classList.add('show');
+  computeSlipParams();
+
+  // Rebuild beacons from defaults
+  externalSensors = [];
+  externalSensorIdCounter = 0;
+  buildLandmarks();
+
+  // Rebuild trajectory and racks with reset points
+  buildTrajectory();
+  buildRacks();
+
+  // Apply tuning and update metrics display
+  updateSensorTuning();
+  if (typeof updateMetrics === 'function') updateMetrics();
+}
+
 // ============================================================
 // UI EVENT BINDING (browser only)
 // ============================================================
