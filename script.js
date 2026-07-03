@@ -136,6 +136,28 @@ class EKFSlam {
     this.P = math.multiply(math.add(this.P, Pt), 0.5);
   }
 
+  imuUpdate(thetaMeasured, noiseTheta) {
+    const H = math.matrix([[0, 0, 1, 0]]);
+    const Rimu = math.diag([noiseTheta]);
+    const z = math.matrix([[thetaMeasured]]);
+    const h = math.matrix([[this.getTheta()]]);
+
+    const HT = math.transpose(H);
+    const PHT = math.multiply(this.P, HT);
+    const S = math.add(math.multiply(H, PHT), Rimu);
+    const K = math.multiply(PHT, math.inv(S));
+
+    const innov = math.subtract(z, h);
+    innov.valueOf()[0][0] = this.normalizeAngle(innov.valueOf()[0][0]);
+    this.state = math.add(this.state, math.multiply(K, innov));
+    this.state.valueOf()[2][0] = this.normalizeAngle(this.state.valueOf()[2][0]);
+
+    const KH = math.multiply(K, H);
+    this.P = math.multiply(math.subtract(this.I, KH), this.P);
+    const Pt = math.transpose(this.P);
+    this.P = math.multiply(math.add(this.P, Pt), 0.5);
+  }
+
   getPositionUncertainty() {
     const p = this.P.valueOf();
     return p[0][0] + p[1][1];
@@ -195,6 +217,8 @@ let sensorLidarEnabled = true;
 let sensorLidarAccuracy = 1.0;
 let sensorGpsEnabled = false;
 let sensorGpsAccuracy = 1.0;
+let sensorImuEnabled = false;
+let sensorImuAccuracy = 1.0;
 
 let externalSensors = [];
 let externalSensorIdCounter = 0;
@@ -205,9 +229,11 @@ function updateSensorTuning() {
   sensorWheelAccuracy = parseFloat(document.getElementById('wheelOdometryAccuracy').value) || 1.0;
   sensorLidarAccuracy = parseFloat(document.getElementById('lidarAccuracy').value) || 1.0;
   sensorGpsAccuracy = parseFloat(document.getElementById('gpsAccuracy').value) || 1.0;
+  sensorImuAccuracy = parseFloat(document.getElementById('imuAccuracy').value) || 1.0;
   sensorWheelEnabled = document.getElementById('sensorWheelOdometry').checked;
   sensorLidarEnabled = document.getElementById('sensorLidar').checked;
   sensorGpsEnabled = document.getElementById('sensorGps').checked;
+  sensorImuEnabled = document.getElementById('sensorImu').checked;
 
   const wheelScale = sensorWheelEnabled ? (1.0 / Math.max(sensorWheelAccuracy, 0.01)) : 50;
   const lidarScale = sensorLidarEnabled ? (1.0 / Math.max(sensorLidarAccuracy, 0.01)) : 100;
@@ -658,6 +684,13 @@ function draw() {
       gpsNoise * 2
     ];
     ekf.gpsUpdate(gpsMeas);
+  }
+
+  // IMU heading update (interior sensor, always available)
+  if (sensorImuEnabled) {
+    const imuNoiseTheta = 1.0 / Math.max(sensorImuAccuracy, 0.01);
+    const thetaMeas = trueSt.theta + (Math.random() - 0.5) * imuNoiseTheta * 0.2;
+    ekf.imuUpdate(thetaMeas, imuNoiseTheta * 0.05);
   }
 
   // External sensor updates (position beacons)
@@ -1274,13 +1307,14 @@ function routeComplete() {
 // ============================================================
 // SAVINGS CALCULATOR
 // ============================================================
-const SENSOR_COST = { wheel: 200, lidar: 5000, gps: 800, beacon: 150 };
+const SENSOR_COST = { wheel: 200, lidar: 5000, gps: 800, imu: 3000, beacon: 150 };
 
 function getSensorBOMCost() {
   let cost = 0;
   if (sensorWheelEnabled) cost += SENSOR_COST.wheel;
   if (sensorLidarEnabled) cost += SENSOR_COST.lidar;
   if (sensorGpsEnabled) cost += SENSOR_COST.gps;
+  if (sensorImuEnabled) cost += SENSOR_COST.imu;
   cost += externalSensors.length * SENSOR_COST.beacon;
   return cost;
 }
@@ -1417,6 +1451,11 @@ function resetConfig() {
   document.getElementById('gpsValue').textContent = '1.00';
   updateSliderBg(document.getElementById('gpsAccuracy'));
 
+  document.getElementById('sensorImu').checked = false;
+  document.getElementById('imuAccuracy').value = '1.0';
+  document.getElementById('imuValue').textContent = '1.00';
+  updateSliderBg(document.getElementById('imuAccuracy'));
+
   // Other controls
   document.getElementById('agvSpeed').value = '2.0';
   document.getElementById('speedValue').textContent = '2.0';
@@ -1509,6 +1548,7 @@ if (typeof document !== 'undefined') {
     setupSensorListener('wheelOdometry');
     setupSensorListener('lidar');
     setupSensorListener('gps');
+    setupSensorListener('imu');
 
     document.getElementById('agvSpeed').addEventListener('input', function () {
       agvSpeed = parseFloat(this.value);

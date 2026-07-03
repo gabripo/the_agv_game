@@ -245,6 +245,23 @@
                   Q
                   near zero (near-perfect odometry).
                 </div>
+                <div class="sensor-row" style="margin-top: 2px;">
+                  <label class="sensor-toggle">
+                    <input type="checkbox" id="sensorImu">
+                    <span>IMU</span>
+                  </label>
+                  <input type="range" class="sensor-slider" id="imuAccuracy" min="0" max="100" step="0.1"
+                    value="1.0"
+                    title="Accuracy = sensor quality. Heading noise σ_θ ∝ 1/accuracy. Higher slider → lower σ_θ → filter trusts IMU heading more.">
+                  <span class="sensor-value" id="imuValue">1.00</span>
+                  <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
+                    title="The slider sets accuracy. Internally IMU heading std dev is scaled by 1/accuracy. At 0 → σ_θ = ∞ (ignore IMU), at 100 → σ_θ ≈ 0 (perfect heading).">ⓘ</span>
+                </div>
+                <div class="slider-hint" style="padding: 0 8px 4px;">
+                  <strong>Accuracy</strong> (slider value) → <strong>heading σ_θ ∝ 1/accuracy</strong>. Higher = lower
+                  heading std dev = filter trusts IMU more. At 0, noise is infinite (filter ignores IMU); at 100, noise
+                  near zero (near-perfect heading).
+                </div>
               </div>
               <div style="margin-top: 12px;">
                 <h2>Exterior Sensors</h2>
@@ -377,11 +394,11 @@
                 <div style="margin-bottom: 8px;">$$\text{perfFactor} = 0.40 \times \max\!\big(0,\; 1 -
                   \frac{\sigma}{3.0}\big)$$</div>
                 <div style="margin-bottom: 8px;">$$\text{BOM} = C_{\text{wheel}} + C_{\text{lidar}} + C_{\text{gps}} +
-                  n_{\text{beacon}} \times C_{\text{beacon}}$$</div>
+                  C_{\text{imu}} + n_{\text{beacon}} \times C_{\text{beacon}}$$</div>
                 <div style="margin-bottom: 8px;">$$\text{savings} = \text{round}(\text{perfFactor} \times \text{BOM})$$
                 </div>
                 <div style="margin-top: 6px;">
-                  Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong>
+                  Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong> · imu <strong>$3,000</strong>
                   · beacon
                   <strong>$150</strong> ea.
                 </div>
