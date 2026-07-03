@@ -1061,6 +1061,28 @@ function drawEKFEstimate() {
 
   pop();
 
+  // LIDAR range visualization
+  if (sensorLidarEnabled) {
+    noFill();
+    stroke(52, 152, 219, 30);
+    strokeWeight(1);
+    circle(x, y, MAX_SENSOR_RANGE * 2);
+
+    // Sweep arc
+    const sweepAngle = (frameCount * 0.02) % (Math.PI * 2);
+    noFill();
+    stroke(52, 152, 219, 50);
+    strokeWeight(2);
+    arc(x, y, MAX_SENSOR_RANGE * 2, MAX_SENSOR_RANGE * 2,
+        sweepAngle - 0.3, sweepAngle + 0.3);
+
+    stroke(52, 152, 219, 80);
+    strokeWeight(1);
+    line(x, y,
+         x + Math.cos(sweepAngle) * MAX_SENSOR_RANGE,
+         y + Math.sin(sweepAngle) * MAX_SENSOR_RANGE);
+  }
+
   // Sensor status indicators (drawn in world coords)
   noStroke();
   textAlign(LEFT, CENTER);

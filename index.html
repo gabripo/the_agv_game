@@ -708,10 +708,9 @@
       <div class="card">
         <div class="dashboard-scroll">
 
-          <!-- SENSORS -->
+          <!-- PROPRIOCEPTIVE -->
           <div>
-            <h2>Configure AGV</h2>
-
+            <h2>Interior Sensors</h2>
             <div class="sensor-row">
               <label class="sensor-toggle">
                 <input type="checkbox" id="sensorWheelOdometry" checked>
@@ -721,7 +720,13 @@
               <span class="sensor-value" id="wheelOdometryValue">1.00</span>
               <span class="sensor-tooltip" data-tip="Wheel encoders measure rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.">&#9432;</span>
             </div>
+          </div>
 
+          <div class="section-divider"></div>
+
+          <!-- EXTERIOCEPTIVE -->
+          <div>
+            <h2>Exterior Sensors</h2>
             <div class="sensor-row">
               <label class="sensor-toggle">
                 <input type="checkbox" id="sensorLidar" checked>
@@ -731,8 +736,11 @@
               <span class="sensor-value" id="lidarValue">1.00</span>
               <span class="sensor-tooltip" data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
             </div>
-
-            <div class="sensor-row">
+            <div style="margin: 10px 0 4px 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Beacons (detected by LIDAR)</div>
+            <div id="externalSensorsList"></div>
+            <button class="btn-add-beacon" id="btnAddBeacon">+ Add Beacon</button>
+            <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">Click +Add, then click the map. Drag to move. ✕ to remove.</p>
+            <div class="sensor-row" style="margin-top: 8px;">
               <label class="sensor-toggle">
                 <input type="checkbox" id="sensorGps">
                 <span>GPS</span>
@@ -741,16 +749,6 @@
               <span class="sensor-value" id="gpsValue">1.00</span>
               <span class="sensor-tooltip" data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
             </div>
-          </div>
-
-          <div class="section-divider"></div>
-
-          <!-- EXTERNAL BEACONS -->
-          <div>
-            <h2>External Beacons</h2>
-            <div id="externalSensorsList"></div>
-            <button class="btn-add-beacon" id="btnAddBeacon">+ Add Beacon</button>
-            <p style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px;">Click +Add, then click the map. Drag to move. ✕ to remove.</p>
           </div>
 
           <div class="section-divider"></div>
