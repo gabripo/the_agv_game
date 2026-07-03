@@ -223,7 +223,7 @@ let slipStartTime = CORRIDOR_T_START;
 let slipEndTime = CORRIDOR_T_END;
 
 let agvSpeed = 2.0;
-let startPoint = { x: 150, y: 440 };
+let startPoint = { x: 150, y: 400 };
 let endPoint = { x: 700, y: 160 };
 let userCorridorStart = CORRIDOR_T_START;
 let userCorridorEnd = CORRIDOR_T_END;
