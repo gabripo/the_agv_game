@@ -174,6 +174,11 @@ let slipDuration = CORRIDOR_T_END - CORRIDOR_T_START;
 let slipStartTime = CORRIDOR_T_START;
 let slipEndTime = CORRIDOR_T_END;
 
+let startPoint = { x: 150, y: 440 };
+let endPoint = { x: 700, y: 160 };
+let userCorridorStart = CORRIDOR_T_START;
+let userCorridorEnd = CORRIDOR_T_END;
+
 // ============================================================
 // TRAJECTORY & WORLD
 // ============================================================
@@ -187,10 +192,13 @@ function cubicBezier(p0, p1, p2, p3, t) {
 
 function buildTrajectory() {
   trajectory = [];
-  const p0 = { x: 150, y: 440 };
-  const p1 = { x: 280, y: 440 };
-  const p2 = { x: 500, y: 300 };
-  const p3 = { x: 700, y: 160 };
+  const p0 = { x: startPoint.x, y: startPoint.y };
+  const dx = endPoint.x - startPoint.x;
+  const dy = endPoint.y - startPoint.y;
+  // Control-point offsets preserved proportionally from original layout
+  const p1 = { x: startPoint.x + dx * (130 / 550), y: startPoint.y };
+  const p2 = { x: endPoint.x - dx * (200 / 550), y: endPoint.y + Math.abs(dy) * (140 / 280) };
+  const p3 = { x: endPoint.x, y: endPoint.y };
 
   for (let i = 0; i <= TOTAL_TIME; i++) {
     const t = i / TOTAL_TIME;
@@ -256,8 +264,8 @@ function buildRacks() {
 
 function computeSlipParams() {
   if (slipMode === 'deterministic') {
-    slipStartTime = CORRIDOR_T_START;
-    slipEndTime = CORRIDOR_T_END;
+    slipStartTime = userCorridorStart;
+    slipEndTime = userCorridorEnd;
     slipDuration = slipEndTime - slipStartTime;
   } else {
     slipOffset = Math.floor(Math.random() * 60);
@@ -403,6 +411,80 @@ function initSimulation() {
   document.getElementById('flashRed').classList.remove('show');
 }
 
+let dragTarget = null;
+
+function getNearestTrajectoryIndex(mx, my) {
+  let minDist = Infinity;
+  let nearest = 0;
+  for (let i = 0; i < trajectory.length; i++) {
+    const d = Math.hypot(mx - trajectory[i].x, my - trajectory[i].y);
+    if (d < minDist) {
+      minDist = d;
+      nearest = i;
+    }
+  }
+  return nearest;
+}
+
+function mousePressed() {
+  if (running || completed || crashed) return;
+  const dStart = Math.hypot(mouseX - startPoint.x, mouseY - startPoint.y);
+  const dEnd = Math.hypot(mouseX - endPoint.x, mouseY - endPoint.y);
+  if (dStart < 24) {
+    dragTarget = 'start';
+    return false;
+  }
+  if (dEnd < 24) {
+    dragTarget = 'end';
+    return false;
+  }
+  if (slipMode === 'deterministic' && trajectory.length) {
+    const sIdx = Math.min(Math.floor(slipStartTime), trajectory.length - 1);
+    const eIdx = Math.min(Math.floor(slipEndTime), trajectory.length - 1);
+    const sp = trajectory[sIdx];
+    const ep = trajectory[eIdx];
+    const dCS = Math.hypot(mouseX - sp.x, mouseY - sp.y);
+    const dCE = Math.hypot(mouseX - ep.x, mouseY - ep.y);
+    if (dCS < 20) {
+      dragTarget = 'corridorStart';
+      return false;
+    }
+    if (dCE < 20) {
+      dragTarget = 'corridorEnd';
+      return false;
+    }
+  }
+}
+
+function mouseDragged() {
+  if (!dragTarget) return;
+  const x = constrain(mouseX, 20, width - 20);
+  const y = constrain(mouseY, 20, height - 20);
+  if (dragTarget === 'start') {
+    startPoint.x = x;
+    startPoint.y = y;
+    buildTrajectory();
+    initSimulation();
+  } else if (dragTarget === 'end') {
+    endPoint.x = x;
+    endPoint.y = y;
+    buildTrajectory();
+    initSimulation();
+  } else if (dragTarget === 'corridorStart' || dragTarget === 'corridorEnd') {
+    const idx = getNearestTrajectoryIndex(mouseX, mouseY);
+    if (dragTarget === 'corridorStart') {
+      userCorridorStart = Math.min(idx, userCorridorEnd - 10);
+    } else {
+      userCorridorEnd = Math.max(idx, userCorridorStart + 10);
+    }
+    computeSlipParams();
+  }
+}
+
+function mouseReleased() {
+  dragTarget = null;
+}
+
 // ============================================================
 // p5.js DRAW
 // ============================================================
@@ -431,6 +513,7 @@ function draw() {
     drawLandmarks();
     drawStartEnd();
     drawTrajectoryPath();
+    drawCorridorMarkers();
     drawEKFEstimate();
     drawIdlePrompt();
     return;
@@ -577,28 +660,109 @@ function drawLandmarks() {
 }
 
 function drawStartEnd() {
+  const sx = startPoint.x, sy = startPoint.y;
+  const ex = endPoint.x, ey = endPoint.y;
+  const idle = !running && !completed && !crashed;
+
+  const hoverS = idle && Math.hypot(mouseX - sx, mouseY - sy) < 24;
+  const hoverE = idle && Math.hypot(mouseX - ex, mouseY - ey) < 24;
+
   // Start zone (Point A)
   noStroke();
-  fill(46, 204, 113, 30);
-  circle(150, 440, 60);
-  fill(46, 204, 113, 60);
-  circle(150, 440, 30);
-  fill(46, 204, 113);
-  circle(150, 440, 8);
+  fill(46, 204, 113, hoverS ? 60 : 30);
+  circle(sx, sy, hoverS ? 80 : 60);
+  fill(46, 204, 113, hoverS ? 90 : 60);
+  circle(sx, sy, hoverS ? 40 : 30);
+  fill(46, 204, 113, hoverS ? 220 : 180);
+  circle(sx, sy, hoverS ? 12 : 8);
+  if (hoverS) {
+    noFill();
+    stroke(46, 204, 113, 80);
+    strokeWeight(2);
+    circle(sx, sy, 28);
+    noStroke();
+  }
   fill(46, 204, 113, 180);
   textAlign(CENTER, CENTER);
   textSize(10);
-  text('A', 150, 440);
+  text('A', sx, sy - 14);
 
   // End zone (Point B)
-  fill(52, 152, 219, 30);
-  circle(700, 160, 60);
-  fill(52, 152, 219, 60);
-  circle(700, 160, 30);
-  fill(52, 152, 219);
-  circle(700, 160, 8);
+  fill(52, 152, 219, hoverE ? 60 : 30);
+  circle(ex, ey, hoverE ? 80 : 60);
+  fill(52, 152, 219, hoverE ? 90 : 60);
+  circle(ex, ey, hoverE ? 40 : 30);
+  fill(52, 152, 219, hoverE ? 220 : 180);
+  circle(ex, ey, hoverE ? 12 : 8);
+  if (hoverE) {
+    noFill();
+    stroke(52, 152, 219, 80);
+    strokeWeight(2);
+    circle(ex, ey, 28);
+    noStroke();
+  }
   fill(52, 152, 219, 180);
-  text('B', 700, 160);
+  text('B', ex, ey - 14);
+}
+
+function drawCorridorMarkers() {
+  if (slipMode !== 'deterministic' || running || completed || crashed) return;
+  if (!trajectory.length) return;
+  const sIdx = Math.min(Math.floor(slipStartTime), trajectory.length - 1);
+  const eIdx = Math.min(Math.floor(slipEndTime), trajectory.length - 1);
+
+  const hoverS = Math.hypot(mouseX - trajectory[sIdx].x, mouseY - trajectory[sIdx].y) < 20;
+  const hoverE = Math.hypot(mouseX - trajectory[eIdx].x, mouseY - trajectory[eIdx].y) < 20;
+
+  // Highlighted corridor segment
+  noFill();
+  stroke(243, 156, 18, 80);
+  strokeWeight(6);
+  beginShape();
+  for (let i = sIdx; i <= eIdx; i++) {
+    vertex(trajectory[i].x, trajectory[i].y);
+  }
+  endShape();
+
+  // Start marker
+  const sx = trajectory[sIdx].x, sy = trajectory[sIdx].y;
+  noStroke();
+  fill(243, 156, 18, hoverS ? 200 : 150);
+  const sz = hoverS ? 14 : 10;
+  quad(sx - sz, sy, sx, sy - sz * 1.2, sx + sz, sy, sx, sy + sz * 1.2);
+  if (hoverS) {
+    noFill();
+    stroke(243, 156, 18, 100);
+    strokeWeight(2);
+    circle(sx, sy, 28);
+    noStroke();
+  }
+  fill(243, 156, 18, 200);
+  textAlign(CENTER, CENTER);
+  textSize(9);
+  text('▸', sx, sy - 16);
+
+  // End marker
+  const ex = trajectory[eIdx].x, ey = trajectory[eIdx].y;
+  fill(231, 76, 60, hoverE ? 200 : 150);
+  const ez = hoverE ? 14 : 10;
+  quad(ex - ez, ey, ex, ey - ez * 1.2, ex + ez, ey, ex, ey + ez * 1.2);
+  if (hoverE) {
+    noFill();
+    stroke(231, 76, 60, 100);
+    strokeWeight(2);
+    circle(ex, ey, 28);
+    noStroke();
+  }
+  fill(231, 76, 60, 200);
+  text('◂', ex, ey - 16);
+
+  // Label
+  fill(243, 156, 18, 140);
+  textAlign(CENTER, TOP);
+  textSize(9);
+  const mid = trajectory[Math.floor((sIdx + eIdx) / 2)];
+  text('featureless corridor', mid.x, mid.y + 16);
 }
 
 function drawTrajectoryPath() {
@@ -995,6 +1159,10 @@ document.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       slipMode = this.dataset.mode;
+      const params = document.getElementById('corridorParams');
+      if (params) {
+        params.classList.toggle('show', slipMode === 'deterministic');
+      }
       computeSlipParams();
     });
   });

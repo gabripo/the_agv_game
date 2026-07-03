@@ -183,6 +183,49 @@
       border: none;
     }
 
+    /* ===== COORDINATE INPUTS ===== */
+    .coord-group {
+      margin-bottom: 10px;
+    }
+    .coord-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .coord-inputs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .coord-inputs .coord-prefix {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    input[type="number"] {
+      width: 58px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+    .corridor-params {
+      margin-top: 12px;
+      display: none;
+    }
+    .corridor-params.show {
+      display: block;
+    }
+
     /* ===== SLIP MODE SELECTOR ===== */
     .mode-selector {
       display: flex;
@@ -450,7 +493,8 @@
       opacity: 0.4;
       cursor: not-allowed;
     }
-    .locked input[type="range"] {
+    .locked input[type="range"],
+    .locked input[type="number"] {
       opacity: 0.5;
       pointer-events: none;
     }
@@ -535,12 +579,27 @@
 
           <div class="section-divider"></div>
 
+          <!-- ROUTE CONFIG -->
+          <div>
+            <h2>Route Configuration</h2>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+              Drag the <strong style="color: var(--success);">A</strong> and <strong style="color: var(--accent);">B</strong> markers on the map to reposition the start and end points.
+            </p>
+          </div>
+
+          <div class="section-divider"></div>
+
           <!-- SLIP MODE -->
           <div>
             <h2>Corridor Scenario</h2>
             <div class="mode-selector" id="modeSelector">
               <button class="mode-btn active" data-mode="deterministic">Deterministic</button>
               <button class="mode-btn" data-mode="random">Semi-Random</button>
+            </div>
+            <div class="corridor-params show" id="corridorParams">
+              <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+                Drag the <strong style="color: var(--warning);">corridor markers</strong> along the path on the map to set the featureless zone.
+              </p>
             </div>
           </div>
 
