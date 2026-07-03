@@ -1,7 +1,7 @@
 // ============================================================
 // EKF SLAM CLASS
 // ============================================================
-class EKFSlam {
+class EKF {
   constructor() {
     this.state = math.matrix([[0], [0], [0], [0]]);
     this.P = math.multiply(math.identity(4), 0.1);
@@ -489,7 +489,7 @@ function setup() {
 }
 
 function initSimulation() {
-  ekf = new EKFSlam();
+  ekf = new EKF();
   const start = trajectory[0];
   ekf.setState(start.x, start.y, start.theta, start.v);
   ekfHistory = [];
@@ -575,8 +575,8 @@ function mousePressed() {
       if (toggle) {
         toggle.checked = !toggle.checked;
         updateSensorTuning();
-  updateMetrics();
-}
+        updateMetrics();
+      }
       return false;
     }
   }
@@ -601,7 +601,7 @@ function mousePressed() {
   for (let i = 0; i < racks.length; i++) {
     const r = racks[i];
     if (mouseX > r.x - r.w / 2 - 6 && mouseX < r.x + r.w / 2 + 6 &&
-        mouseY > r.y - r.h / 2 - 6 && mouseY < r.y + r.h / 2 + 6) {
+      mouseY > r.y - r.h / 2 - 6 && mouseY < r.y + r.h / 2 + 6) {
       dragTarget = 'rack';
       dragRackIdx = i;
       return false;
@@ -1787,7 +1787,7 @@ if (typeof document !== 'undefined') {
 // ============================================================
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    EKFSlam,
+    EKF,
     cubicBezier,
     buildTrajectory,
     calculateSavings,

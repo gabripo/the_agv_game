@@ -1,11 +1,11 @@
 const { expect } = require('chai');
-const { EKFSlam } = require('../script.js');
+const { EKF } = require('../script.js');
 
-describe('EKFSlam', function () {
+describe('EKF', function () {
   let ekf;
 
   beforeEach(function () {
-    ekf = new EKFSlam();
+    ekf = new EKF();
   });
 
   // ------------------------------------------------------------------

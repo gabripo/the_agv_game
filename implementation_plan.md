@@ -28,7 +28,7 @@ the_agv_game/
 - Link `script.js`
 - CSS reset + base typography
 
-#### Step 2 — `EKFSlam` class in `script.js`
+#### Step 2 — `EKF` class in `script.js`
 - **State vector** (4×1): `[x, y, θ, v]ᵀ`
 - **Control input** (2×1): `[v̇, θ̇]ᵀ`
 - **Covariance matrix P** (4×4): uncertainty around state estimate

@@ -301,7 +301,7 @@ The dollar savings scale with the actual sensor configuration: more/better senso
 |------|---------------|
 | `index.html` | DOM structure, CDN script tags, 3-tier accordion with KaTeX, sensor/route/metrics/savings HTML |
 | `styles.css` | All styles (~710 lines): layout grid, dashboard cards, accordion, sliders, responsive breakpoints, animations |
-| `script.js` | `EKFSlam` class (including `imuUpdate`, `gpsUpdate`), simulation world, p5.js setup/draw, rendering (GPS/IMU indicators), UI/dashboard, sensor/business logic, Node.js exports |
+| `script.js` | `EKF` class (including `imuUpdate`, `gpsUpdate`), simulation world, p5.js setup/draw, rendering (GPS/IMU indicators), UI/dashboard, sensor/business logic, Node.js exports |
 | `tests/setup.js` | Provides `global.math` from npm `mathjs` package |
 | `tests/test_ekf.js` | 28 unit tests for the EKF class |
 | `tests/test_functions.js` | 17 unit tests for pure simulation functions |

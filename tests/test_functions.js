@@ -13,7 +13,7 @@ const {
   LIDAR_COST,
   MAX_SAVINGS_SIGMA
 } = require('../script.js');
-const { EKFSlam } = require('../script.js');
+const { EKF } = require('../script.js');
 
 // ------------------------------------------------------------------
 // CUBIC BEZIER
@@ -90,7 +90,7 @@ describe('calculateSavings', function () {
   let ekf;
 
   beforeEach(function () {
-    ekf = new EKFSlam();
+    ekf = new EKF();
   });
 
   it('returns 0.40 when sigma is 0 (perfect estimate)', function () {
@@ -158,7 +158,7 @@ describe('noisyMeasurement', function () {
   let ekf;
 
   beforeEach(function () {
-    ekf = new EKFSlam();
+    ekf = new EKF();
     // Set R to known values for deterministic noise bound testing
     ekf.setTuning(1, 1);
   });
