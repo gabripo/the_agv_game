@@ -879,22 +879,33 @@ function drawExternalSensors() {
   for (const s of externalSensors) {
     const hover = !running && !completed && !crashed && Math.hypot(mouseX - s.x, mouseY - s.y) < 18;
 
+    const active = running && !isInCorridor(simTime) &&
+      Math.hypot(s.x - getNominalState(simTime).x, s.y - getNominalState(simTime).y) < lidarRange;
+
+    // Active glow ring
+    if (active) {
+      noFill();
+      stroke(46, 204, 113, 120);
+      strokeWeight(2);
+      circle(s.x, s.y, 30);
+    }
+
     // Sensor icon
     noStroke();
-    fill(155, 89, 182, hover ? 220 : 160);
-    circle(s.x, s.y, hover ? 22 : 16);
-    fill(255, 255, 255, hover ? 220 : 160);
+    fill(active ? 46 : 155, active ? 204 : 89, active ? 113 : 182, active ? 220 : (hover ? 180 : 120));
+    circle(s.x, s.y, active ? 22 : (hover ? 22 : 16));
+    fill(255, 255, 255, active ? 255 : (hover ? 220 : 140));
     textAlign(CENTER, CENTER);
-    textSize(hover ? 11 : 9);
+    textSize(active ? 11 : (hover ? 11 : 9));
     text('\u2699', s.x, s.y + 1);
 
-    // Label
-    if (hover) {
-      fill(155, 89, 182, 180);
+    // Label on hover or active
+    if (hover || active) {
+      fill(active ? 46 : 155, active ? 204 : 89, active ? 113 : 182, active ? 200 : 180);
       noStroke();
       textSize(8);
       textAlign(CENTER, TOP);
-      text('ext. sensor', s.x, s.y + 16);
+      text(active ? 'ACTIVE' : 'ext. sensor', s.x, s.y + 16);
     }
   }
 }
