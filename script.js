@@ -169,7 +169,7 @@ let racks = [];
 
 let ekfHistory = [];
 let trueHistory = [];
-const MAX_HISTORY = 200;
+const MAX_HISTORY = 2000;
 
 let lastMeasurement = null;
 let lastLandmark = null;
