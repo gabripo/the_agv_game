@@ -14,7 +14,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "mocha --require tests/setup.js tests/**/*.js",
+    "test": "mocha --require tests/setup.js tests/test_*.js",
     "test:watch": "mocha --require tests/setup.js --watch tests/**/*.js",
     "test:ekf": "mocha --require tests/setup.js tests/test_ekf.js",
     "test:functions": "mocha --require tests/setup.js tests/test_functions.js",
