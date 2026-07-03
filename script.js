@@ -1401,16 +1401,19 @@ function resetConfig() {
   document.getElementById('sensorWheelOdometry').checked = true;
   document.getElementById('wheelOdometryAccuracy').value = '1.0';
   document.getElementById('wheelOdometryValue').textContent = '1.00';
+  updateSliderBg(document.getElementById('wheelOdometryAccuracy'));
 
   document.getElementById('sensorLidar').checked = true;
   document.getElementById('lidarAccuracy').value = '1.0';
   document.getElementById('lidarValue').textContent = '1.00';
+  updateSliderBg(document.getElementById('lidarAccuracy'));
   document.getElementById('lidarRange').value = '400';
   document.getElementById('lidarRangeValue').textContent = '400';
 
   document.getElementById('sensorGps').checked = false;
   document.getElementById('gpsAccuracy').value = '1.0';
   document.getElementById('gpsValue').textContent = '1.00';
+  updateSliderBg(document.getElementById('gpsAccuracy'));
 
   // Other controls
   document.getElementById('agvSpeed').value = '2.0';
@@ -1446,6 +1449,16 @@ function resetConfig() {
 }
 
 // ============================================================
+function updateSliderBg(slider) {
+  const min = parseFloat(slider.min);
+  const max = parseFloat(slider.max);
+  const val = parseFloat(slider.value);
+  const pct = ((val - min) / (max - min)) * 100;
+  slider.style.background = 'linear-gradient(to right, var(--danger), var(--warning), var(--success))';
+  slider.style.backgroundSize = pct + '% 100%';
+  slider.style.backgroundRepeat = 'no-repeat';
+}
+
 // UI EVENT BINDING (browser only)
 // ============================================================
 if (typeof document !== 'undefined') {
@@ -1459,9 +1472,11 @@ if (typeof document !== 'undefined') {
       const valId = name + 'Value';
       const el = document.getElementById(accId);
       if (!el) return;
+      updateSliderBg(el);
       el.addEventListener('input', function () {
         const valEl = document.getElementById(valId);
         if (valEl) valEl.textContent = parseFloat(this.value).toFixed(2);
+        updateSliderBg(this);
         if (!running) {
           updateSensorTuning();
           updateMetrics();
