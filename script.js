@@ -1065,6 +1065,19 @@ function drawEKFEstimate() {
   textSize(8);
   text('EKF', 0, -16);
 
+  // GPS active indicator
+  if (sensorGpsEnabled && running && !isInCorridor(simTime)) {
+    noStroke();
+    fill(46, 204, 113, 200);
+    circle(0, -26, 6);
+    fill(46, 204, 113, 100);
+    circle(0, -26, 10);
+    fill(46, 204, 113, 220);
+    textSize(6);
+    textFont('monospace');
+    text('GPS', 0, -34);
+  }
+
   pop();
 
   // LIDAR range visualization
