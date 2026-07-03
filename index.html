@@ -263,6 +263,15 @@
           <summary>Live Metrics</summary>
           <div class="accordion-content" style="padding: 12px 16px;">
             <h2>Live Metrics</h2>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+              <strong>Status</strong> shows the simulation state. <br>
+              <strong>Uncertainty</strong> is the trace of the
+              EKF's
+              position covariance — higher means the filter is less confident about where the AGV is.<br>
+              <strong>EKF Divergence</strong> is the Euclidean distance between the EKF estimate and the true AGV
+              position;
+              if it exceeds 60&thinsp;px the filter has lost track.
+            </p>
             <div class="metric-row">
               <span class="metric-label">Status</span>
               <span class="metric-value" id="statusDisplay">
@@ -271,7 +280,8 @@
               </span>
             </div>
             <div class="metric-row">
-              <span class="metric-label">Position Uncertainty <span style="font-family: monospace;">(tr(P))</span></span>
+              <span class="metric-label">Position Uncertainty <span
+                  style="font-family: monospace;">(tr(P))</span></span>
               <span class="metric-value" id="uncertaintyDisplay">—</span>
             </div>
             <div class="metric-row">
@@ -302,15 +312,20 @@
               <summary style="font-weight: 500;">Formula &amp; sensor costs</summary>
               <div
                 style="margin-top: 8px; line-height: 1.7; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
-                <div style="margin-bottom: 8px;">$$\text{perfFactor} = 0.40 \times \max\!\big(0,\; 1 - \frac{\sigma}{3.0}\big)$$</div>
-                <div style="margin-bottom: 8px;">$$\text{BOM} = C_{\text{wheel}} + C_{\text{lidar}} + C_{\text{gps}} + n_{\text{beacon}} \times C_{\text{beacon}}$$</div>
-                <div style="margin-bottom: 8px;">$$\text{savings} = \text{round}(\text{perfFactor} \times \text{BOM})$$</div>
+                <div style="margin-bottom: 8px;">$$\text{perfFactor} = 0.40 \times \max\!\big(0,\; 1 -
+                  \frac{\sigma}{3.0}\big)$$</div>
+                <div style="margin-bottom: 8px;">$$\text{BOM} = C_{\text{wheel}} + C_{\text{lidar}} + C_{\text{gps}} +
+                  n_{\text{beacon}} \times C_{\text{beacon}}$$</div>
+                <div style="margin-bottom: 8px;">$$\text{savings} = \text{round}(\text{perfFactor} \times \text{BOM})$$
+                </div>
                 <div style="margin-top: 6px;">
-                  Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong> · beacon
+                  Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong>
+                  · beacon
                   <strong>$150</strong> ea.
                 </div>
                 <div style="margin-top: 4px; color: var(--text-secondary);">
-                  Where $\sigma = \sqrt{\text{tr}(P_{[0:2,0:2]})}$ is the position standard deviation from the EKF covariance.<br>
+                  Where $\sigma = \sqrt{\text{tr}(P_{[0:2,0:2]})}$ is the position standard deviation from the EKF
+                  covariance.<br>
                   Higher EKF accuracy → lower $\sigma$ → higher perfFactor → more savings.<br>
                   Removing sensors reduces BOM baseline and absolute savings.
                 </div>
