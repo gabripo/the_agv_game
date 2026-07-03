@@ -681,49 +681,7 @@
       text-align: right;
     }
 
-    .sensor-tooltip {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary);
-      font-size: 0.6rem;
-      font-weight: 700;
-      cursor: help;
-      flex-shrink: 0;
-    }
 
-    .sensor-tooltip:hover::after {
-      content: attr(data-tip);
-      position: absolute;
-      left: 50%;
-      bottom: calc(100% + 6px);
-      transform: translateX(-50%);
-      background: var(--surface);
-      color: var(--text);
-      font-size: 0.7rem;
-      font-weight: 400;
-      padding: 6px 10px;
-      border-radius: 6px;
-      white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .sensor-tooltip:hover::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      bottom: calc(100% + 2px);
-      transform: translateX(-50%);
-      border: 4px solid transparent;
-      border-top-color: var(--surface);
-    }
 
     .sensor-id {
       font-size: 0.8rem;
@@ -875,9 +833,8 @@
                   <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0.1" max="5.0" step="0.01"
                     value="1.0">
                   <span class="sensor-value" id="wheelOdometryValue">1.00</span>
-                  <span class="sensor-tooltip"
-                    data-tip="Wheel encoders measure rotation to estimate velocity. Prone to slip on wet or uneven surfaces — increases process noise.">&#9432;</span>
                 </div>
+                <div class="slider-hint" style="padding: 0 8px;">Higher = more accurate odometry = lower process noise. At max, the filter trusts wheel encoders almost perfectly. At min, it expects significant slip and grows covariance faster.</div>
               </div>
               <div style="margin-top: 12px;">
                 <h2>Exterior Sensors</h2>
@@ -889,9 +846,8 @@
                   <input type="range" class="sensor-slider" id="lidarAccuracy" min="0.1" max="5.0" step="0.01"
                     value="1.0">
                   <span class="sensor-value" id="lidarValue">1.00</span>
-                  <span class="sensor-tooltip"
-                    data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
                 </div>
+                <div class="slider-hint" style="padding: 0 8px;">Higher = more accurate LIDAR = lower measurement noise. At max, the filter strongly trusts landmark detections. At min, measurements are treated as very noisy.</div>
                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
                   <span style="font-size: 0.75rem; color: var(--text-secondary); min-width: 72px;">Range</span>
                   <input type="range" class="sensor-slider" id="lidarRange" min="100" max="600" step="10" value="400">
@@ -912,8 +868,8 @@
                   <input type="range" class="sensor-slider" id="gpsAccuracy" min="0.1" max="5.0" step="0.01"
                     value="1.0">
                   <span class="sensor-value" id="gpsValue">1.00</span>
-                  <span class="sensor-tooltip"
-                    data-tip="Global Positioning System. Provides absolute position coordinates via satellites. Degraded indoors; useful for correcting long-term drift.">&#9432;</span>
+                </div>
+                <div class="slider-hint" style="padding: 0 8px;">Higher = more accurate GPS = lower position noise. At max, GPS fixes are near-perfect. At min, GPS is unreliable and provides very noisy absolute position updates.</div>
                 </div>
               </div>
             </div>
