@@ -223,7 +223,7 @@ let slipStartTime = CORRIDOR_T_START;
 let slipEndTime = CORRIDOR_T_END;
 
 let agvSpeed = 2.0;
-let startPoint = { x: 150, y: 400 };
+let startPoint = { x: 100, y: 430 };
 let endPoint = { x: 700, y: 160 };
 let userCorridorStart = CORRIDOR_T_START;
 let userCorridorEnd = CORRIDOR_T_END;
@@ -549,11 +549,13 @@ function mouseDragged() {
     startPoint.y = y;
     buildTrajectory();
     initSimulation();
+    updateCoordDisplay();
   } else if (dragTarget === 'end') {
     endPoint.x = x;
     endPoint.y = y;
     buildTrajectory();
     initSimulation();
+    updateCoordDisplay();
   } else if (dragTarget === 'corridorStart' || dragTarget === 'corridorEnd') {
     const idx = getNearestTrajectoryIndex(mouseX, mouseY);
     if (dragTarget === 'corridorStart') {
@@ -1443,12 +1445,22 @@ function resetConfig() {
   buildTrajectory();
   buildRacks();
 
+  // Update coordinate display
+  updateCoordDisplay();
+
   // Apply tuning and update metrics display
   updateSensorTuning();
   if (typeof updateMetrics === 'function') updateMetrics();
 }
 
 // ============================================================
+function updateCoordDisplay() {
+  const startEl = document.getElementById('startCoordDisplay');
+  const endEl = document.getElementById('endCoordDisplay');
+  if (startEl) startEl.textContent = '(' + Math.round(startPoint.x) + ', ' + Math.round(startPoint.y) + ')';
+  if (endEl) endEl.textContent = '(' + Math.round(endPoint.x) + ', ' + Math.round(endPoint.y) + ')';
+}
+
 function updateSliderBg(slider) {
   const min = parseFloat(slider.min);
   const max = parseFloat(slider.max);
@@ -1467,6 +1479,7 @@ if (typeof document !== 'undefined') {
     if (speedEl) agvSpeed = parseFloat(speedEl.value);
     const rangeEl = document.getElementById('lidarRange');
     if (rangeEl) lidarRange = parseFloat(rangeEl.value);
+    updateCoordDisplay();
     function setupSensorListener(name) {
       const accId = name + 'Accuracy';
       const valId = name + 'Value';
