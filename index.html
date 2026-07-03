@@ -137,6 +137,20 @@
               <div class="katex-block">$$ \mathbf{P}_k^+ = \left( \mathbf{I} - \mathbf{K}_k \mathbf{H}_k \right)
                 \mathbf{P}_k^- $$</div>
 
+              <p><strong>Sensor Noise Models</strong> (accuracy $a_{\text{sensor}} \in [0, 100]$)</p>
+              <div class="katex-block">$$ \sigma_{\text{odom}} = \frac{1}{a_{\text{odom}}}, \qquad
+                \sigma_{\text{lidar}} = \frac{1}{a_{\text{lidar}}}, \qquad
+                \sigma_{\text{gps}} = \frac{1}{a_{\text{gps}}} $$</div>
+              <div class="katex-block">$$ \sigma_{\text{imu}} = \frac{1}{a_{\text{imu}}}, \qquad
+                \sigma_{\text{beacon}} = \frac{1}{a_{\text{beacon}}} $$</div>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                Each $a$ is the slider value for that sensor. Higher accuracy → smaller $\sigma$ → the filter trusts
+                that sensor more. At $a = 0$ the noise is infinite (sensor ignored); at $a = 100$ the noise is
+                effectively zero. The beacon accuracy $a_{\text{beacon}}$ is set per-beacon in the list below the LIDAR
+                range slider. Internally the EKF packs these $\sigma$ values into the noise covariance matrices
+                $\mathbf{Q}$ (process) and $\mathbf{R}$ (measurement).
+              </p>
+
               <p><strong>Key Insight:</strong> Because both <strong>f</strong> and <strong>h</strong> are non-linear, we
                 linearize them via their Jacobians at each timestep — this is what makes the filter <em>Extended</em>.
                 The
@@ -234,33 +248,38 @@
                   </label>
                   <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0" max="100" step="0.1"
                     value="1.0"
-                    title="Accuracy = sensor quality. Covariance Q ∝ 1/accuracy. Higher slider → lower Q → filter trusts odometry more.">
+                    title="Accuracy a_odom in [0,100]. Process noise sigma_odom ∝ 1/a_odom. Higher -> lower sigma_odom -> filter trusts odometry more.">
                   <span class="sensor-value" id="wheelOdometryValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="The slider sets accuracy. Internally Q (process noise) is scaled by 1/accuracy. At 0 → Q = ∞ (ignore odometry), at 100 → Q ≈ 0 (perfect odometry).">ⓘ</span>
+                    title="sigma_odom = 1 / a_odom (clamped at a_odom >= 0.01). At a_odom = 0 -> sigma_odom = inf (ignore odometry); at a_odom = 100 -> sigma_odom ≈ 0 (perfect odometry).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
-                  <strong>Accuracy</strong> (slider value) → <strong>Q ∝ 1/accuracy</strong>. Higher = lower process
-                  covariance = filter trusts wheel encoders more. At 0, Q is infinite (filter ignores odometry); at 100,
-                  Q
-                  near zero (near-perfect odometry).
+                  Accuracy $a_{\text{odom}}$ → $\sigma_{\text{odom}} = 1 / a_{\text{odom}}$.<br>
+                  Higher = lower process noise std dev = filter trusts wheel encoders more.<br>
+                  At $a_{\text{odom}} = 0$, $\sigma_{\text{odom}}$ is infinite (filter ignores odometry).<br>
+                  At
+                  $a_{\text{odom}} = 100$, $\sigma_{\text{odom}} \approx 0$
+                  (near-perfect odometry).
                 </div>
                 <div class="sensor-row" style="margin-top: 2px;">
                   <label class="sensor-toggle">
                     <input type="checkbox" id="sensorImu">
                     <span>IMU</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="imuAccuracy" min="0" max="100" step="0.1"
-                    value="1.0"
-                    title="Accuracy = sensor quality. Heading noise σ_θ ∝ 1/accuracy. Higher slider → lower σ_θ → filter trusts IMU heading more.">
+                  <input type="range" class="sensor-slider" id="imuAccuracy" min="0" max="100" step="0.1" value="1.0"
+                    title="Accuracy a_imu in [0,100]. Heading noise sigma_imu ∝ 1/a_imu. Higher -> lower sigma_imu -> filter trusts IMU heading more.">
                   <span class="sensor-value" id="imuValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="The slider sets accuracy. Internally IMU heading std dev is scaled by 1/accuracy. At 0 → σ_θ = ∞ (ignore IMU), at 100 → σ_θ ≈ 0 (perfect heading).">ⓘ</span>
+                    title="sigma_imu = 1 / a_imu (clamped at a_imu >= 0.01). At a_imu = 0 -> sigma_imu = inf (ignore IMU); at a_imu = 100 -> sigma_imu ≈ 0 (perfect heading).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
-                  <strong>Accuracy</strong> (slider value) → <strong>heading σ_θ ∝ 1/accuracy</strong>. Higher = lower
-                  heading std dev = filter trusts IMU more. At 0, noise is infinite (filter ignores IMU); at 100, noise
-                  near zero (near-perfect heading).
+                  Accuracy $a_{\text{imu}}$ → $\sigma_{\text{imu}} = 1 / a_{\text{imu}}$.<br>
+                  Higher = lower heading
+                  std dev = filter trusts IMU more.<br>
+                  At $a_{\text{imu}} = 0$, $\sigma_{\text{imu}}$ is infinite
+                  (filter ignores IMU).<br>
+                  At $a_{\text{imu}} = 100$, $\sigma_{\text{imu}} \approx 0$
+                  (near-perfect heading).
                 </div>
               </div>
               <div style="margin-top: 12px;">
@@ -271,14 +290,19 @@
                     <span>LIDAR</span>
                   </label>
                   <input type="range" class="sensor-slider" id="lidarAccuracy" min="0" max="100" step="0.1" value="1.0"
-                    title="Accuracy = sensor quality. Covariance R ∝ 1/accuracy. Higher slider → lower R → filter trusts LIDAR more.">
+                    title="Accuracy a_lidar in [0,100]. Measurement noise sigma_lidar ∝ 1/a_lidar. Higher -> lower sigma_lidar -> filter trusts LIDAR more.">
                   <span class="sensor-value" id="lidarValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="The slider sets accuracy. Internally R (measurement noise) is scaled by 1/accuracy. At 0 → R = ∞ (ignore LIDAR), at 100 → R ≈ 0 (perfect LIDAR).">ⓘ</span>
+                    title="sigma_lidar = 1 / a_lidar (clamped at a_lidar >= 0.01). At a_lidar = 0 -> sigma_lidar = inf (ignore LIDAR); at a_lidar = 100 -> sigma_lidar ≈ 0 (perfect LIDAR).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
-                  <strong>Accuracy</strong> (slider value) → <strong>R ∝ 1/accuracy</strong>. Higher = lower measurement
-                  covariance = filter trusts LIDAR more. At 0, R is infinite (filter ignores LIDAR); at 100, R near zero
+                  Accuracy $a_{\text{lidar}}$ → $\sigma_{\text{lidar}} = 1 / a_{\text{lidar}}$.<br>
+                  Higher = lower
+                  measurement noise std dev = filter trusts LIDAR more.<br>
+                  At $a_{\text{lidar}} = 0$,
+                  $\sigma_{\text{lidar}}$
+                  is infinite (filter ignores LIDAR).<br>
+                  At $a_{\text{lidar}} = 100$, $\sigma_{\text{lidar}} \approx 0$
                   (near-perfect detections).
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
@@ -299,15 +323,19 @@
                     <span>GPS</span>
                   </label>
                   <input type="range" class="sensor-slider" id="gpsAccuracy" min="0" max="100" step="0.1" value="1.0"
-                    title="Accuracy = sensor quality. Noise σ ∝ 1/accuracy. Higher slider → lower σ → filter trusts GPS more.">
+                    title="Accuracy a_gps in [0,100]. Position noise sigma_gps ∝ 1/a_gps. Higher -> lower sigma_gps -> filter trusts GPS more.">
                   <span class="sensor-value" id="gpsValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="The slider sets accuracy. Internally GPS noise std dev is 1/accuracy. At 0 → noise = ∞ (ignore GPS), at 100 → noise ≈ 0 (perfect fixes).">ⓘ</span>
+                    title="sigma_gps = 1 / a_gps (clamped at a_gps >= 0.01). At a_gps = 0 -> sigma_gps = inf (ignore GPS); at a_gps = 100 -> sigma_gps ≈ 0 (perfect fixes).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
-                  <strong>Accuracy</strong> (slider value) → <strong>noise σ ∝ 1/accuracy</strong>. Higher = lower
-                  measurement std dev = filter trusts GPS more. At 0, noise is infinite (filter ignores GPS); at 100,
-                  noise near zero (near-perfect fixes).
+                  Accuracy $a_{\text{gps}}$ → $\sigma_{\text{gps}} = 1 / a_{\text{gps}}$.<br>
+                  Higher = lower position
+                  std dev = filter trusts GPS more.<br>
+                  At $a_{\text{gps}} = 0$, $\sigma_{\text{gps}}$ is infinite
+                  (filter ignores GPS)<br>
+                  At $a_{\text{gps}} = 100$, $\sigma_{\text{gps}} \approx 0$
+                  (near-perfect fixes).
                 </div>
               </div>
             </div>
@@ -398,7 +426,8 @@
                 <div style="margin-bottom: 8px;">$$\text{savings} = \text{round}(\text{perfFactor} \times \text{BOM})$$
                 </div>
                 <div style="margin-top: 6px;">
-                  Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong> · imu <strong>$3,000</strong>
+                  Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong>
+                  · imu <strong>$3,000</strong>
                   · beacon
                   <strong>$150</strong> ea.
                 </div>
