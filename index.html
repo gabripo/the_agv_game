@@ -892,6 +892,11 @@
                   <span class="sensor-tooltip"
                     data-tip="Light Detection and Ranging. Measures range &amp; bearing to landmarks via laser pulses. Fails in featureless environments.">&#9432;</span>
                 </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
+                  <span style="font-size: 0.75rem; color: var(--text-secondary); min-width: 72px;">Range</span>
+                  <input type="range" class="sensor-slider" id="lidarRange" min="100" max="600" step="10" value="400">
+                  <span class="sensor-value" id="lidarRangeValue">400</span>
+                </div>
                 <div
                   style="margin: 10px 0 4px 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">
                   Beacons (detected by LIDAR)</div>

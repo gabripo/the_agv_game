@@ -185,7 +185,7 @@ const TOTAL_TIME = 400;
 const CORRIDOR_T_START = 120;
 const CORRIDOR_T_END = 280;
 const ROBOT_RADIUS = 16;
-const MAX_SENSOR_RANGE = 400;
+let lidarRange = 400;
 const LIDAR_COST = 5000;
 const MAX_SAVINGS_SIGMA = 3.0;
 
@@ -370,7 +370,7 @@ function getVisibleLandmarks(state) {
   return externalSensors.filter(s => {
     const dx = s.x - state.x;
     const dy = s.y - state.y;
-    return Math.sqrt(dx * dx + dy * dy) < MAX_SENSOR_RANGE;
+    return Math.sqrt(dx * dx + dy * dy) < lidarRange;
   });
 }
 
@@ -664,7 +664,7 @@ function draw() {
     const dx = trueSt.x - s.x;
     const dy = trueSt.y - s.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < MAX_SENSOR_RANGE) {
+    if (dist < lidarRange) {
       const noise = 1.0 / Math.max(s.accuracy, 0.01);
       const meas = [
         trueSt.x + (Math.random() - 0.5) * noise * 4,
@@ -1061,21 +1061,21 @@ function drawEKFEstimate() {
     noFill();
     stroke(52, 152, 219, 30);
     strokeWeight(1);
-    circle(x, y, MAX_SENSOR_RANGE * 2);
+    circle(x, y, lidarRange * 2);
 
     // Sweep arc
     const sweepAngle = (frameCount * 0.02) % (Math.PI * 2);
     noFill();
     stroke(52, 152, 219, 50);
     strokeWeight(2);
-    arc(x, y, MAX_SENSOR_RANGE * 2, MAX_SENSOR_RANGE * 2,
+    arc(x, y, lidarRange * 2, lidarRange * 2,
         sweepAngle - 0.3, sweepAngle + 0.3);
 
     stroke(52, 152, 219, 80);
     strokeWeight(1);
     line(x, y,
-         x + Math.cos(sweepAngle) * MAX_SENSOR_RANGE,
-         y + Math.sin(sweepAngle) * MAX_SENSOR_RANGE);
+         x + Math.cos(sweepAngle) * lidarRange,
+         y + Math.sin(sweepAngle) * lidarRange);
   }
 
   // Sensor status indicators (drawn in world coords)
@@ -1363,6 +1363,8 @@ if (typeof document !== 'undefined') {
 document.addEventListener('DOMContentLoaded', function () {
   const speedEl = document.getElementById('agvSpeed');
   if (speedEl) agvSpeed = parseFloat(speedEl.value);
+  const rangeEl = document.getElementById('lidarRange');
+  if (rangeEl) lidarRange = parseFloat(rangeEl.value);
   function setupSensorListener(name) {
     const accId = name + 'Accuracy';
     const valId = name + 'Value';
@@ -1397,6 +1399,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!running) {
       buildTrajectory();
     }
+  });
+
+  document.getElementById('lidarRange').addEventListener('input', function () {
+    lidarRange = parseFloat(this.value);
+    document.getElementById('lidarRangeValue').textContent = lidarRange;
   });
 
   document.getElementById('btnAddBeacon').addEventListener('click', function () {
