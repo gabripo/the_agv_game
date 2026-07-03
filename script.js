@@ -454,6 +454,7 @@ function initSimulation() {
 
   document.getElementById('overlaySuccess').classList.remove('active');
   document.getElementById('overlayFail').classList.remove('active');
+  document.getElementById('overlayCollision').classList.remove('active');
   document.getElementById('flashRed').classList.remove('show');
 }
 
@@ -687,20 +688,20 @@ function draw() {
 
   // Divergence check (primary failure mode for high-R / low-Q tunings)
   if (checkDivergence()) {
-    gameOver();
+    gameOver('divergence');
     return;
   }
 
   // Collision check (secondary visual signal)
   if (checkCollision()) {
-    gameOver();
+    gameOver('collision');
     return;
   }
 
   // Lost estimate check (EKF diverged off-canvas)
   if (ekf.getX() < -50 || ekf.getX() > width + 50 ||
       ekf.getY() < -50 || ekf.getY() > height + 50) {
-    gameOver();
+    gameOver('lost');
     return;
   }
 
@@ -1204,7 +1205,7 @@ function checkDivergence() {
   return currentDivergence > 60;
 }
 
-function gameOver() {
+function gameOver(reason) {
   crashed = true;
   running = false;
 
@@ -1216,7 +1217,10 @@ function gameOver() {
   flash.classList.add('show');
   setTimeout(() => flash.classList.remove('show'), 800);
 
-  document.getElementById('overlayFail').classList.add('active');
+  const overlay = document.getElementById(
+    reason === 'collision' ? 'overlayCollision' : 'overlayFail'
+  );
+  overlay.classList.add('active');
   updateMetrics();
 }
 

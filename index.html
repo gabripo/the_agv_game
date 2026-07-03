@@ -697,8 +697,16 @@
         <div class="overlay" id="overlayFail">
           <div class="overlay-flash" id="flashRed" style="background: var(--danger);"></div>
           <div class="overlay-content">
-            <h2 style="color: var(--danger);">✗ AGV MALFUNCTION</h2>
+            <h2 style="color: var(--danger);">✗ ESTIMATE DIVERGED</h2>
             <p>The estimated state diverged from the true position. Review your Q/R tuning.</p>
+            <button class="btn-restart" onclick="resetSimulation()">TUNE AGAIN</button>
+          </div>
+        </div>
+        <div class="overlay" id="overlayCollision">
+          <div class="overlay-flash" id="flashRed2" style="background: var(--danger);"></div>
+          <div class="overlay-content">
+            <h2 style="color: var(--danger);">✗ COLLISION DETECTED</h2>
+            <p>The EKF estimate drifted into warehouse racking. Try increasing Q (trust odometry less) or reducing R (trust sensors more).</p>
             <button class="btn-restart" onclick="resetSimulation()">TUNE AGAIN</button>
           </div>
         </div>
