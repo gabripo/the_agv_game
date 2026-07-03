@@ -717,8 +717,7 @@ input[type="number"]:focus {
 .locked input[type="number"],
 .locked .sensor-toggle input[type="checkbox"],
 .locked .sensor-slider,
-.locked .btn-add-beacon,
-.locked .btn-magic {
+.locked .btn-add-beacon {
   opacity: 0.5;
   pointer-events: none;
 }
