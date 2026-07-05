@@ -8,3 +8,4 @@ dist/
 .build/
 screenshots/
 test-results/
+prompt.md

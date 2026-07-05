@@ -29,7 +29,7 @@ A single-page portfolio piece demonstrating deep understanding of Extended Kalma
 
 - **Deterministic:** Slip always occurs at the same time & location. Good for demos and repeatable testing.
 - **Semi-Random:** Slip occurs at a random position within the corridor zone. Rewards robust tuning, adds replayability.
-- **Portfolio narrative:** "Shows awareness that real SLAM environments combine predictable failure modes (known featureless corridors) with stochastic disturbances."
+- **Portfolio narrative:** "Shows awareness that real environments combine predictable failure modes (known featureless corridors) with stochastic disturbances."
 
 ### Sensor Accuracy vs Toggle
 *Each sensor has both an enable toggle and an accuracy slider.*

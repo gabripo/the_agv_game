@@ -153,9 +153,10 @@ To ensure the slip bias accumulates over time, the encoder **pre-integrates** it
 
 $$\theta_{\text{enc},k} = \theta_{\text{enc},k-1} + \dot{\theta}_{\text{corrupted},k} \cdot \Delta t$$
 
-where $\dot{\theta}_{\text{corrupted}}$ comes from `getCorruptedControl()` and includes the corridor slip bias (section 4.3). This pre-integrated heading carries the full history of slip, so the measurement innovation $\theta_{\text{enc},k} - \hat{\theta}^-_k$ captures the **current step's** slip increment rather than being cancelled by previous corrections.
+where $`\dot{\theta}_{\text{corrupted}}`$ comes from `getCorruptedControl()` and includes the corridor slip bias (section 4.3). This pre-integrated heading carries the full history of slip, so the measurement innovation $`\theta_{\text{enc},k} - \hat{\theta}^-_k`$ captures the **current step's** slip increment rather than being cancelled by previous corrections.
 
 **Measurement vector (2×1):**
+
 $$\mathbf{z}_{\text{odom}} = \begin{bmatrix} \theta_{\text{enc}}\\\\ v_{\text{enc}} \end{bmatrix}$$
 
 | Symbol | Description | Unit |
@@ -164,17 +165,20 @@ $$\mathbf{z}_{\text{odom}} = \begin{bmatrix} \theta_{\text{enc}}\\\\ v_{\text{en
 | $v_{\text{enc}}$ | Forward velocity from wheel speeds | px/timestep |
 
 **Measurement model (2×1):**
+
 $$h_{\text{odom}}(\mathbf{x}_k) = \begin{bmatrix} \theta_k\\\\ v_k \end{bmatrix}$$
 
 **Measurement Jacobian (2×4):**
+
 $$\mathbf{H}_{\text{odom}} = \frac{\partial h_{\text{odom}}}{\partial \mathbf{x}} = \begin{bmatrix} 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
 
 **Measurement noise covariance (2×2 diagonal):**
+
 $$\mathbf{R}_{\text{odom}} = \sigma_{\text{odom}}^2 \times \mathbf{I}_2$$
 
 where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}$ → stronger trust in the (biased) pre-integrated encoder → more divergence in the corridor.
 
-The odometry Jacobian $\mathbf{H}_{\text{odom}}$ has the same structure as the IMU Jacobian $\mathbf{H}_{\text{imu}}$ because both sensors observe the same state variables ($\theta$ and $v$). They differ only in their noise characteristics ($\mathbf{R}_{\text{odom}}$ vs $\mathbf{R}_{\text{imu}}$) and availability: odometry is subject to corridor dropout, while the IMU is an interior sensor always available.
+The odometry Jacobian $`\mathbf{H}_{\text{odom}}`$ has the same structure as the IMU Jacobian $`\mathbf{H}_{\text{imu}}`$ because both sensors observe the same state variables ($\theta$ and $v$). They differ only in their noise characteristics ($`\mathbf{R}_{\text{odom}}`$ vs $`\mathbf{R}_{\text{imu}}`$) and availability: odometry is subject to corridor dropout, while the IMU is an interior sensor always available.
 
 ### 3.7 Measurement Model (Range-Bearing)
 
