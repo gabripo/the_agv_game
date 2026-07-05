@@ -1572,7 +1572,6 @@ function resetSimulation() {
 
 function resetConfig() {
   if (running) return;
-  if (completed || crashed) resetSimulation();
 
   // Sensor toggles and sliders
   document.getElementById('sensorWheelOdometry').checked = true;
@@ -1612,7 +1611,7 @@ function resetConfig() {
   updateSliderBg(document.getElementById('divergenceThreshold'));
 
   // Route — reset start/end points and corridor markers
-  startPoint = { x: 150, y: 440 };
+  startPoint = { x: 100, y: 430 };
   endPoint = { x: 700, y: 160 };
   userCorridorStart = CORRIDOR_T_START;
   userCorridorEnd = CORRIDOR_T_END;
@@ -1635,9 +1634,11 @@ function resetConfig() {
   // Update coordinate display
   updateCoordDisplay();
 
+  // Reinitialize EKF and simulation state with the new trajectory
+  resetSimulation();
+
   // Apply tuning and update metrics display
   updateSensorTuning();
-  if (typeof updateMetrics === 'function') updateMetrics();
 }
 
 // ============================================================
