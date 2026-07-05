@@ -100,7 +100,7 @@ p5.js draw()
 
 The filter uses a 4-dimensional state for planar pose and velocity:
 
-$$\mathbf{x}_k = \begin{bmatrix} x_k\\ y_k\\ \theta_k\\ v_k \end{bmatrix}$$
+$$\mathbf{x}_k = \begin{bmatrix} x_k\\\\ y_k\\\\ \theta_k\\\\ v_k \end{bmatrix}$$
 
 | Index | Symbol | Description | Unit |
 |-------|--------|-------------|------|
@@ -111,7 +111,7 @@ $$\mathbf{x}_k = \begin{bmatrix} x_k\\ y_k\\ \theta_k\\ v_k \end{bmatrix}$$
 
 ### 3.2 Control Input
 
-$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\ a_k \end{bmatrix}$$
+$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\\\ a_k \end{bmatrix}$$
 
 | Index | Symbol | Description | Unit |
 |-------|--------|-------------|------|
@@ -120,7 +120,7 @@ $$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\ a_k \end{bmatrix}$$
 
 ### 3.3 Motion Model (Non-Linear)
 
-$$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\ y_k + v_k \sin(\theta_k) \Delta t\\ \theta_k + \dot{\theta} \Delta t\\ v_k + \dot{v} \Delta t \end{bmatrix}$$
+$$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\\\ y_k + v_k \sin(\theta_k) \Delta t\\\\ \theta_k + \dot{\theta} \Delta t\\\\ v_k + \dot{v} \Delta t \end{bmatrix}$$
 
 This is a bicycle model with steering input.
 
@@ -128,7 +128,7 @@ This is a bicycle model with steering input.
 
 $$\mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k}$$
 
-$$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -v_{k-1} \sin(\theta_{k-1}) \Delta t & \cos(\theta_{k-1}) \Delta t\\ 0 & 1 & v_{k-1} \cos(\theta_{k-1}) \Delta t & \sin(\theta_{k-1}) \Delta t\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
+$$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -v_{k-1} \sin(\theta_{k-1}) \Delta t & \cos(\theta_{k-1}) \Delta t\\\\ 0 & 1 & v_{k-1} \cos(\theta_{k-1}) \Delta t & \sin(\theta_{k-1}) \Delta t\\\\ 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
 
 ### 3.5 Predict Step
 
@@ -140,13 +140,13 @@ $$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \math
 
 Measurements are taken to the nearest visual landmark:
 
-$$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{matrix} \sqrt{\Delta x_kˆ2 + \Delta y_kˆ2} = d_k\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{matrix}$$
+$$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
 
 ### 3.7 Jacobian of Measurement Model (2×4)
 
 $$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$$
 
-$$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_kˆ-}{d_kˆ-} & -\frac{\Delta y_kˆ-}{d_kˆ-} & 0 & 0\\ \frac{\Delta y_kˆ-}{d_k^{-{2}}} & -\frac{\Delta x_kˆ-}{d_k^{-ˆ{2}}} & -1 & 0 \end{bmatrix}$$
+$$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
 
 ### 3.8 Update Step
 
@@ -160,9 +160,9 @@ $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
 The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction:
 
-$$ \mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
+$$ \mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
 
-$$ \mathbf{z}_{\text{imu}} = \begin{bmatrix} \theta_{\text{measured}}\\ v_{\text{measured}} \end{bmatrix} $$
+$$ \mathbf{z}_{\text{imu}} = \begin{bmatrix} \theta_{\text{measured}}\\\\ v_{\text{measured}} \end{bmatrix} $$
 
 $$ \mathbf{R}_{\text{imu}} = \sigma_{\text{imu}} \mathbf{I}_2 $$
 
