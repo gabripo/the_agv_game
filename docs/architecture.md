@@ -136,19 +136,49 @@ $$\mathbf{x}_k^- = f(\mathbf{x}_{k-1}, \mathbf{u}_k)$$
 
 $$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \mathbf{Q}$$
 
-### 3.6 Measurement Model (Range-Bearing)
+### 3.6 Odometry Sensor (Control Input)
+
+The odometry sensor provides the control vector that drives the motion model in the predict step. Rather than being a direct state measurement, odometry readings are used as control inputs to advance the state estimate.
+
+**Control vector (2×1):**
+$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\ a_k \end{bmatrix}$$
+
+| Symbol | Description | Unit |
+|--------|-------------|------|
+| $\dot{\theta}_k$ | Heading (yaw) rate | rad/timestep |
+| $a_k$ | Forward acceleration | px/timestep² |
+
+The control input feeds into the non-linear motion model $f(\mathbf{x}_{k-1}, \mathbf{u}_k)$ (section 3.3) during the predict step (section 3.5).
+
+**Process noise covariance (4×4 diagonal):**
+$$\mathbf{Q} = \sigma_{\text{odom}}^2 \times \text{diag}(0.5,\ 0.5,\ 0.1,\ 0.05)$$
+
+where $\sigma_{\text{odom}} \propto 1/\text{accuracy}$ (wheel accuracy slider). Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{Q}$ → more trust in the motion model.
+
+**Control-input Jacobian (4×2):**
+The Jacobian of the motion model with respect to the control input describes how errors in odometry readings propagate to the predicted state:
+
+$$\mathbf{B}_k = \frac{\partial f}{\partial \mathbf{u}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k} = \begin{bmatrix} 0 & 0\\ 0 & 0\\ \Delta t & 0\\ 0 & \Delta t \end{bmatrix}$$
+
+The columns correspond to $\delta\dot{\theta}$ and $\delta a$ respectively. $\mathbf{B}_k$ is used in the full covariance propagation:
+
+$$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \mathbf{B}_k \mathbf{Q}_{\text{odom}} \mathbf{B}_k^\mathsf{T}$$
+
+where $\mathbf{Q}_{\text{odom}}$ is the odometry noise covariance in control space (2×2). In the current implementation, the noise is projected directly into state space via the diagonal $\mathbf{Q}$ matrix shown above, which simplifies tuning while achieving the same effect.
+
+### 3.7 Measurement Model (Range-Bearing)
 
 Measurements are taken to the nearest visual landmark:
 
 $$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
 
-### 3.7 Jacobian of Measurement Model (2×4)
+### 3.8 Jacobian of Measurement Model (2×4)
 
 $$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$$
 
 $$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
 
-### 3.8 IMU Measurement Update (Superimposed on Odometry)
+### 3.9 IMU Measurement Update (Superimposed on Odometry)
 
 The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction:
 
@@ -167,7 +197,7 @@ The `imuUpdate()` method follows the standard EKF measurement update, correcting
 | $\sigma_{\text{imu}}$ | 1×1 | IMU noise std dev (∝ 1/accuracy) |
 | $\mathbf{R}_{\text{imu}}$ | 2×2 diagonal | IMU measurement noise covariance |
 
-### 3.9 Covariance Matrices
+### 3.10 Covariance Matrices
 
 | Matrix | Dimension | Description | Default | Slider Mapping |
 |--------|-----------|-------------|---------|----------------|
@@ -176,7 +206,7 @@ The `imuUpdate()` method follows the standard EKF measurement update, correcting
 | `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–100 → R = default × 1/acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
 
-### 3.10 Update Step
+### 3.11 Update Step
 
 $$\mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1}$$
 
