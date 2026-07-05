@@ -11,6 +11,7 @@ class EKF {
     this.Q = math.clone(this.defaultQ);
     this.R = math.clone(this.defaultR);
     this.imuQ = math.clone(this.defaultQ);
+    this.defaultRodom = math.diag([1, 1]);
     this.lastK = null;
     this.lastInnov = null;
     this.lastS = null;
@@ -179,6 +180,33 @@ class EKF {
     this.lastS = S;
   }
 
+  odomUpdate(thetaMeasured, vMeasured, noiseScale) {
+    const H = math.matrix([[0, 0, 1, 0], [0, 0, 0, 1]]);
+    const Rodom = math.multiply(this.defaultRodom, noiseScale);
+    const z = math.matrix([[thetaMeasured], [vMeasured]]);
+    const h = math.matrix([[this.getTheta()], [this.getV()]]);
+
+    const innov = math.subtract(z, h);
+    innov.valueOf()[0][0] = this.normalizeAngle(innov.valueOf()[0][0]);
+
+    const HT = math.transpose(H);
+    const PHT = math.multiply(this.P, HT);
+    const S = math.add(math.multiply(H, PHT), Rodom);
+    const K = math.multiply(PHT, math.inv(S));
+
+    this.state = math.add(this.state, math.multiply(K, innov));
+    this.state.valueOf()[2][0] = this.normalizeAngle(this.state.valueOf()[2][0]);
+
+    const KH = math.multiply(K, H);
+    this.P = math.multiply(math.subtract(this.I, KH), this.P);
+    const Pt = math.transpose(this.P);
+    this.P = math.multiply(math.add(this.P, Pt), 0.5);
+
+    this.lastK = K;
+    this.lastInnov = innov;
+    this.lastS = S;
+  }
+
   getPositionUncertainty() {
     const p = this.P.valueOf();
     return p[0][0] + p[1][1];
@@ -267,10 +295,10 @@ function updateSensorTuning() {
   sensorGpsEnabled = document.getElementById('sensorGps').checked;
   sensorImuEnabled = document.getElementById('sensorImu').checked;
 
-  const wheelScale = sensorWheelEnabled ? (1.0 / Math.max(sensorWheelAccuracy, 0.01)) : 50;
+  const wheelScale = sensorWheelEnabled ? (1.0 / Math.max(sensorWheelAccuracy, 0.01)) : 1e6;
   const lidarScale = sensorLidarEnabled ? (1.0 / Math.max(sensorLidarAccuracy, 0.01)) : 100;
 
-  ekf.Q = math.multiply(ekf.defaultQ, wheelScale);
+  ekf.Q = math.clone(ekf.defaultQ);
   ekf.R = math.multiply(ekf.defaultR, lidarScale);
 }
 
@@ -395,6 +423,15 @@ function getNominalState(t) {
 
 function isInCorridor(t) {
   return t >= slipStartTime && t <= slipEndTime;
+}
+
+function getNominalControl(t) {
+  const idx = Math.min(Math.floor(t), TOTAL_TIME - 1);
+  const nextIdx = Math.min(idx + 1, TOTAL_TIME - 1);
+
+  let dTheta = trajectory[nextIdx].theta - trajectory[idx].theta;
+  dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
+  return [dTheta / DT, 0];
 }
 
 function getCorruptedControl(t) {
@@ -699,9 +736,18 @@ function draw() {
   // --- SIMULATION STEP ---
   const trueSt = getTrueState(simTime);
 
-  // EKF predict (odometry-based)
-  const control = getCorruptedControl(simTime);
+  // EKF predict (nominal commanded motion)
+  const control = getNominalControl(simTime);
   ekf.predict(control, DT);
+
+  // Wheel encoder measurement update
+  if (sensorWheelEnabled) {
+    const enc = getCorruptedControl(simTime);
+    const wheelScale = 1.0 / Math.max(sensorWheelAccuracy, 0.01);
+    const thetaMeas = trueSt.theta + (enc[0] - control[0]) * DT + (Math.random() - 0.5) * 0.001;
+    const vMeas = trueSt.v + (Math.random() - 0.5) * 0.001;
+    ekf.odomUpdate(thetaMeas, vMeas, wheelScale);
+  }
 
   // IMU measurement update (superimposed on odometry predict)
   if (sensorImuEnabled) {
