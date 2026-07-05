@@ -94,7 +94,7 @@ p5.js draw()
 
 ---
 
-## 3. EKF Implementation (`script.js:4–134`)
+## 3. EKF Implementation
 
 ### 3.1 State Vector
 
@@ -148,13 +148,23 @@ $$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$
 
 $$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
 
-### 3.8 Update Step
+### 3.8 Merged Measurement Model
 
-$$\mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1}$$
+When multiple independent sensors observe the state, their measurement models can be stacked into a single observation before the update step. This allows the EKF to process all measurements at once, preserving cross-correlation information.
 
-$$\mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k (\mathbf{z}_k - h(\mathbf{x}_k^-))$$
+**Stacked measurement vector (4×1):**
+$$ \mathbf{z}_{\text{merged}} = \begin{bmatrix} \mathbf{z}_{\text{lidar}}\\\\ \mathbf{z}_{\text{imu}} \end{bmatrix} = \begin{bmatrix} \text{range}\\\\ \text{bearing}\\\\ \theta_{\text{measured}}\\\\ v_{\text{measured}} \end{bmatrix} $$
 
-$$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
+**Merged measurement function (4×1):**
+$$ h_{\text{merged}}(\mathbf{x}_k) = \begin{bmatrix} h_{\text{lidar}}(\mathbf{x}_k)\\\\ h_{\text{imu}}(\mathbf{x}_k) \end{bmatrix} $$
+
+**Merged Jacobian (4×4):**
+$$ \mathbf{H}_{\text{merged}} = \begin{bmatrix} \mathbf{H}_{\text{lidar}}\\\\ \mathbf{H}_{\text{imu}} \end{bmatrix} = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0\\\\ 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
+
+**Merged measurement noise covariance (4×4 block-diagonal):**
+$$ \mathbf{R}_{\text{merged}} = \begin{bmatrix} \mathbf{R}_{\text{lidar}} & \mathbf{0}_{2\times2}\\\\ \mathbf{0}_{2\times2} & \mathbf{R}_{\text{imu}} \end{bmatrix} $$
+
+This merged formulation is equivalent to processing each sensor sequentially (since the sensors are independent, the order does not matter). The standard update step (section 3.11) then uses $\mathbf{H}_{\text{merged}}$, $\mathbf{R}_{\text{merged}}$, and $\mathbf{z}_{\text{merged}}$ in place of their single-sensor counterparts.
 
 ### 3.9 IMU Measurement Update (Superimposed on Odometry)
 
@@ -183,6 +193,14 @@ The `imuUpdate()` method follows the standard EKF measurement update, correcting
 | `Q_imu` | 4×4 diagonal | IMU process noise | diag(0.5, 0.5, 0.1, 0.05) | IMU accuracy 0–100 → Q_imu = default × 1/acc |
 | `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–100 → R = default × 1/acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
+
+### 3.11 Update Step
+
+$$\mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1}$$
+
+$$\mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k (\mathbf{z}_k - h(\mathbf{x}_k^-))$$
+
+$$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
 ---
 
