@@ -141,7 +141,7 @@ $$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \math
 The odometry sensor provides the control vector that drives the motion model in the predict step. Rather than being a direct state measurement, odometry readings are used as control inputs to advance the state estimate.
 
 **Control vector (2×1):**
-$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\ a_k \end{bmatrix}$$
+$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\\\ a_k \end{bmatrix}$$
 
 | Symbol | Description | Unit |
 |--------|-------------|------|
@@ -158,7 +158,7 @@ where $\sigma_{\text{odom}} \propto 1/\text{accuracy}$ (wheel accuracy slider). 
 **Control-input Jacobian (4×2):**
 The Jacobian of the motion model with respect to the control input describes how errors in odometry readings propagate to the predicted state:
 
-$$\mathbf{B}_k = \frac{\partial f}{\partial \mathbf{u}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k} = \begin{bmatrix} 0 & 0\\ 0 & 0\\ \Delta t & 0\\ 0 & \Delta t \end{bmatrix}$$
+$$\mathbf{B}_k = \frac{\partial f}{\partial \mathbf{u}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k} = \begin{bmatrix} 0 & 0\\\\ 0 & 0\\ \Delta t & 0\\\\ 0 & \Delta t \end{bmatrix}$$
 
 The columns correspond to $\delta\dot{\theta}$ and $\delta a$ respectively. $\mathbf{B}_k$ is used in the full covariance propagation:
 
