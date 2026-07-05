@@ -193,7 +193,7 @@ $$\mathbf{x}^+ = \mathbf{x}^- + \mathbf{K} \cdot \text{innov}$$
 
 ### 4.1 Trajectory
 
-The reference path is a cubic Bézier curve from **Point A (150, 400)** to **Point B (700, 160)** with control points at (280, 440) and (500, 300). These defaults are restored on Reset Configuration; users can also drag the A/B markers on the canvas to reposition. The trajectory is pre-computed at integer timesteps and interpolated with linear interpolation between steps.
+The reference path is a cubic Bézier curve from the starting point to the end point. Users can drag the A/B markers on the canvas to reposition. The trajectory is pre-computed at integer timesteps and interpolated with linear interpolation between steps.
 
 Each trajectory point stores `{x, y, theta, v}` where `v = agvSpeed` (configurable via slider, range 0.5–5.0).
 
