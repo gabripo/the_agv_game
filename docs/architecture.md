@@ -41,10 +41,14 @@ p5.js draw()
     ├─ Check: running? → render idle prompt
     ├─ Check: simTime ≥ TOTAL_TIME? → routeComplete()
     │
-    ├─ 1. Get true state from trajectory
-    ├─ 2. Get corrupted control (slip applied in corridor)
-    ├─ 3. EKF.predict(control, dt) (odometry-based, always runs)
-    ├─ 3b. If IMU enabled: noisy θ and v → EKF.imuUpdate() (superimposed on odometry, always available interior)
+     ├─ 1. Get true state from trajectory
+    ├─ 2. Get nominal control (clean thetaDot) → EKF.predict(control, dt)
+    ├─ 3. If IMU enabled: noisy θ and v → EKF.imuUpdate() (unbiased, runs before odometry while P is large)
+    ├─ 3b. If wheel encoders enabled: pre-integrate corrupted thetaDot into encoderTheta → EKF.odomUpdate(encoderTheta, vMeas)
+    ├─ 4. Get visible landmarks (empty in corridor)
+    ├─ 5. If landmark + LIDAR enabled: noisy measurement → EKF.update(meas, lm)
+    ├─ 6. If GPS enabled + outside corridor: noisy GPS → EKF.gpsUpdate()
+    ├─ 7. For each external sensor (beacon): if within range + LIDAR enabled + outside corridor: direct position update → EKF.gpsUpdate()
     ├─ 4. Get visible landmarks (empty in corridor)
     ├─ 5. If landmark + LIDAR enabled: noisy measurement → EKF.update(meas, lm)
     ├─ 6. If GPS enabled + outside corridor: noisy GPS → EKF.gpsUpdate()
@@ -143,14 +147,20 @@ Wheel encoders measure the rotation of each wheel. From the left and right encod
 - **Forward velocity**: $v = r(\omega_L + \omega_R)/2$ where $r$ is the wheel radius and $\omega_L, \omega_R$ are the left and right angular velocities.
 - **Yaw rate**: $\dot{\theta} = r(\omega_L - \omega_R)/b$ where $b$ is the wheelbase.
 
-After integration over one timestep, these yield estimates of the state variables $\theta$ (heading) and $v$ (forward velocity). The odometry is therefore modeled as a **measurement sensor** observing the state, exactly like the IMU (section 3.9) but with independent noise characteristics scaled by the wheel accuracy slider.
+The EKF predict step uses **nominal** (clean) control from `getNominalControl()`, which extracts the commanded yaw rate directly from the trajectory heading differences — no slip bias. The wheel encoders are then treated as a **measurement sensor** observing $\theta$ and $v$.
+
+To ensure the slip bias accumulates over time, the encoder **pre-integrates** its yaw rate readings into a persistent heading:
+
+$$\theta_{\text{enc},k} = \theta_{\text{enc},k-1} + \dot{\theta}_{\text{corrupted},k} \cdot \Delta t$$
+
+where $\dot{\theta}_{\text{corrupted}}$ comes from `getCorruptedControl()` and includes the corridor slip bias (section 4.3). This pre-integrated heading carries the full history of slip, so the measurement innovation $\theta_{\text{enc},k} - \hat{\theta}^-_k$ captures the **current step's** slip increment rather than being cancelled by previous corrections.
 
 **Measurement vector (2×1):**
 $$\mathbf{z}_{\text{odom}} = \begin{bmatrix} \theta_{\text{enc}}\\\\ v_{\text{enc}} \end{bmatrix}$$
 
 | Symbol | Description | Unit |
 |--------|-------------|------|
-| $\theta_{\text{enc}}$ | Heading from integrated wheel encoders | radians |
+| $\theta_{\text{enc}}$ | Pre-integrated heading from wheel encoders | radians |
 | $v_{\text{enc}}$ | Forward velocity from wheel speeds | px/timestep |
 
 **Measurement model (2×1):**
@@ -162,7 +172,7 @@ $$\mathbf{H}_{\text{odom}} = \frac{\partial h_{\text{odom}}}{\partial \mathbf{x}
 **Measurement noise covariance (2×2 diagonal):**
 $$\mathbf{R}_{\text{odom}} = \sigma_{\text{odom}}^2 \times \mathbf{I}_2$$
 
-where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}$ → more weight on odometry corrections in the update step.
+where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}$ → stronger trust in the (biased) pre-integrated encoder → more divergence in the corridor.
 
 The odometry Jacobian $\mathbf{H}_{\text{odom}}$ has the same structure as the IMU Jacobian $\mathbf{H}_{\text{imu}}$ because both sensors observe the same state variables ($\theta$ and $v$). They differ only in their noise characteristics ($\mathbf{R}_{\text{odom}}$ vs $\mathbf{R}_{\text{imu}}$) and availability: odometry is subject to corridor dropout, while the IMU is an interior sensor always available.
 
@@ -180,15 +190,15 @@ $$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k
 
 ### 3.9 IMU Measurement Update (Superimposed on Odometry)
 
-The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction:
+The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction. Unlike the wheel encoders, the IMU is an **interior sensor** unaffected by corridor slip — its measurements reflect the true heading and velocity directly:
 
 $$ \mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
 
 $$ \mathbf{z}_{\text{imu}} = \begin{bmatrix} \theta_{\text{measured}}\\\\ v_{\text{measured}} \end{bmatrix} $$
 
-$$ \mathbf{R}_{\text{imu}} = \sigma_{\text{imu}} \mathbf{I}_2 $$
+$$ \mathbf{R}_{\text{imu}} = (0.01 \cdot \sigma_{\text{imu}}) \mathbf{I}_2 \qquad \sigma_{\text{imu}} = 1 / \text{accuracy} $$
 
-The `imuUpdate()` method follows the standard EKF measurement update, correcting both heading and velocity estimates from IMU data. This runs on top of the odometry `predict()` — the effects are superimposed, not replaced.
+The IMU update **runs before** the wheel encoder update, while the heading covariance is still large after the predict step. This allows the IMU to correct the heading toward the true value before the biased encoder pulls it back. At accuracy=1.0, the IMU's Kalman gain is ≈0.9, dominating the subsequent encoder correction and keeping the EKF on track even inside the corridor.
 
 | Symbol | Dim | Description |
 |--------|-----|-------------|
@@ -241,8 +251,8 @@ A coordinate display below the AGV speed slider shows the current A start / B en
 | **LIDAR landmark dropout** | `getVisibleLandmarks()` returns empty array inside corridor |
 | **GPS dropout** | GPS update gated by `!isInCorridor(simTime)` |
 | **Beacon dropout** | External sensor position updates gated by `!isInCorridor(simTime)` |
-| **IMU availability** | Interior sensor — always available, even inside corridor (replaces odometry predict with IMU dead-reckoning) |
-| **Control corruption** | `getCorruptedControl()` subtracts a sinusoidal steering bias (max 0.015 rad/timestep) from the nominal `thetaDot` during the corridor window |
+| **IMU availability** | Interior sensor — always available, even inside corridor. Runs before the wheel encoder update to correct heading while the covariance is still large. |
+| **Control corruption** | Predict uses `getNominalControl()` (clean thetaDot). Encoder readings from `getCorruptedControl()` subtract a sinusoidal steering bias (max 0.015 rad/timestep) from the nominal `thetaDot` during the corridor window. The bias accumulates in the pre-integrated encoder heading, driving the EKF off the true path. |
 | **Noise** | Small random noise (±0.002 rad/timestep) added to prevent exact reproducibility |
 
 ### 4.4 Slip Mode

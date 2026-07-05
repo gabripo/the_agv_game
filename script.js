@@ -11,7 +11,7 @@ class EKF {
     this.Q = math.clone(this.defaultQ);
     this.R = math.clone(this.defaultR);
     this.imuQ = math.clone(this.defaultQ);
-    this.defaultRodom = math.diag([1, 1]);
+    this.defaultRodom = math.diag([0.01, 0.01]);
     this.lastK = null;
     this.lastInnov = null;
     this.lastS = null;
@@ -260,6 +260,7 @@ let currentDivergence = 0;
 let maxDivergence = 0;
 let currentSavings = 0;
 let showMagic = false;
+let encoderTheta = 0;
 
 const DT = 1;
 const TOTAL_TIME = 400;
@@ -447,7 +448,7 @@ function getCorruptedControl(t) {
     // Slip: corrupt steering — robot thinks it's not turning enough
     // This causes the EKF to predict a straighter path than reality
     const corridorProgress = (t - slipStartTime) / slipDuration;
-    const slipMag = 0.015 * Math.sin(corridorProgress * Math.PI);
+    const slipMag = 0.020 * Math.sin(corridorProgress * Math.PI);
     thetaDot -= slipMag;
     thetaDot += (Math.random() - 0.5) * 0.002;
   }
@@ -533,6 +534,7 @@ function initSimulation() {
   ekfHistory = [];
   trueHistory = [];
   simTime = 0;
+  encoderTheta = trajectory[0].theta;
   completed = false;
   crashed = false;
   running = false;
@@ -740,21 +742,22 @@ function draw() {
   const control = getNominalControl(simTime);
   ekf.predict(control, DT);
 
-  // Wheel encoder measurement update
-  if (sensorWheelEnabled) {
-    const enc = getCorruptedControl(simTime);
-    const wheelScale = 1.0 / Math.max(sensorWheelAccuracy, 0.01);
-    const thetaMeas = trueSt.theta + (enc[0] - control[0]) * DT + (Math.random() - 0.5) * 0.001;
-    const vMeas = trueSt.v + (Math.random() - 0.5) * 0.001;
-    ekf.odomUpdate(thetaMeas, vMeas, wheelScale);
-  }
-
-  // IMU measurement update (superimposed on odometry predict)
+  // IMU measurement update (runs before odometry to correct heading while P is large)
   if (sensorImuEnabled) {
     const imuSigma = 1.0 / Math.max(sensorImuAccuracy, 0.01);
     const thetaMeas = trueSt.theta + (Math.random() - 0.5) * imuSigma * 0.02;
     const vMeas = trueSt.v + (Math.random() - 0.5) * imuSigma * 0.01;
-    ekf.imuUpdate(thetaMeas, vMeas, imuSigma * 0.1);
+    ekf.imuUpdate(thetaMeas, vMeas, imuSigma * 0.01);
+  }
+
+  // Wheel encoder measurement update (pre-integrated heading)
+  if (sensorWheelEnabled) {
+    const enc = getCorruptedControl(simTime);
+    encoderTheta += enc[0] * DT;
+    const wheelScale = 1.0 / Math.max(sensorWheelAccuracy, 0.01);
+    const thetaMeas = encoderTheta + (Math.random() - 0.5) * 0.001;
+    const vMeas = trueSt.v + (Math.random() - 0.5) * 0.001;
+    ekf.odomUpdate(thetaMeas, vMeas, wheelScale);
   }
 
   // Get visible landmarks & update (LIDAR)
