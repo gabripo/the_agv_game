@@ -136,35 +136,35 @@ $$\mathbf{x}_k^- = f(\mathbf{x}_{k-1}, \mathbf{u}_k)$$
 
 $$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \mathbf{Q}$$
 
-### 3.6 Odometry Sensor (Control Input)
+### 3.6 Odometry Sensor (Wheel Encoders)
 
-The odometry sensor provides the control vector that drives the motion model in the predict step. Rather than being a direct state measurement, odometry readings are used as control inputs to advance the state estimate.
+Wheel encoders measure the rotation of each wheel. From the left and right encoder counts, the robot's forward velocity and yaw rate are derived:
 
-**Control vector (2×1):**
-$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\\\ a_k \end{bmatrix}$$
+- **Forward velocity**: $v = r(\omega_L + \omega_R)/2$ where $r$ is the wheel radius and $\omega_L, \omega_R$ are the left and right angular velocities.
+- **Yaw rate**: $\dot{\theta} = r(\omega_L - \omega_R)/b$ where $b$ is the wheelbase.
+
+After integration over one timestep, these yield estimates of the state variables $\theta$ (heading) and $v$ (forward velocity). The odometry is therefore modeled as a **measurement sensor** observing the state, exactly like the IMU (section 3.9) but with independent noise characteristics scaled by the wheel accuracy slider.
+
+**Measurement vector (2×1):**
+$$\mathbf{z}_{\text{odom}} = \begin{bmatrix} \theta_{\text{enc}}\\\\ v_{\text{enc}} \end{bmatrix}$$
 
 | Symbol | Description | Unit |
 |--------|-------------|------|
-| $\dot{\theta}_k$ | Heading (yaw) rate | rad/timestep |
-| $a_k$ | Forward acceleration | px/timestep² |
+| $\theta_{\text{enc}}$ | Heading from integrated wheel encoders | radians |
+| $v_{\text{enc}}$ | Forward velocity from wheel speeds | px/timestep |
 
-The control input feeds into the non-linear motion model $f(\mathbf{x}_{k-1}, \mathbf{u}_k)$ (section 3.3) during the predict step (section 3.5).
+**Measurement model (2×1):**
+$$h_{\text{odom}}(\mathbf{x}_k) = \begin{bmatrix} \theta_k\\\\ v_k \end{bmatrix}$$
 
-**Process noise covariance (4×4 diagonal):**
-$$\mathbf{Q} = \sigma_{\text{odom}}^2 \times \text{diag}(0.5,\ 0.5,\ 0.1,\ 0.05)$$
+**Measurement Jacobian (2×4):**
+$$\mathbf{H}_{\text{odom}} = \frac{\partial h_{\text{odom}}}{\partial \mathbf{x}} = \begin{bmatrix} 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
 
-where $\sigma_{\text{odom}} \propto 1/\text{accuracy}$ (wheel accuracy slider). Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{Q}$ → more trust in the motion model.
+**Measurement noise covariance (2×2 diagonal):**
+$$\mathbf{R}_{\text{odom}} = \sigma_{\text{odom}}^2 \times \mathbf{I}_2$$
 
-**Control-input Jacobian (4×2):**
-The Jacobian of the motion model with respect to the control input describes how errors in odometry readings propagate to the predicted state:
+where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}$ → more weight on odometry corrections in the update step.
 
-$$\mathbf{B}_k = \frac{\partial f}{\partial \mathbf{u}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k} = \begin{bmatrix} 0 & 0\\\\ 0 & 0\\ \Delta t & 0\\\\ 0 & \Delta t \end{bmatrix}$$
-
-The columns correspond to $\delta\dot{\theta}$ and $\delta a$ respectively. $\mathbf{B}_k$ is used in the full covariance propagation:
-
-$$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \mathbf{B}_k \mathbf{Q}_{\text{odom}} \mathbf{B}_k^\mathsf{T}$$
-
-where $\mathbf{Q}_{\text{odom}}$ is the odometry noise covariance in control space (2×2). In the current implementation, the noise is projected directly into state space via the diagonal $\mathbf{Q}$ matrix shown above, which simplifies tuning while achieving the same effect.
+The odometry Jacobian $\mathbf{H}_{\text{odom}}$ has the same structure as the IMU Jacobian $\mathbf{H}_{\text{imu}}$ because both sensors observe the same state variables ($\theta$ and $v$). They differ only in their noise characteristics ($\mathbf{R}_{\text{odom}}$ vs $\mathbf{R}_{\text{imu}}$) and availability: odometry is subject to corridor dropout, while the IMU is an interior sensor always available.
 
 ### 3.7 Measurement Model (Range-Bearing)
 
@@ -201,9 +201,10 @@ The `imuUpdate()` method follows the standard EKF measurement update, correcting
 
 | Matrix | Dimension | Description | Default | Slider Mapping |
 |--------|-----------|-------------|---------|----------------|
-| `Q` | 4×4 diagonal | Odometry process noise | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–100 → Q = default × 1/acc |
+| `Q` | 4×4 diagonal | Process noise (predict step) | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–100 → Q = default × 1/acc |
 | `Q_imu` | 4×4 diagonal | IMU process noise | diag(0.5, 0.5, 0.1, 0.05) | IMU accuracy 0–100 → Q_imu = default × 1/acc |
 | `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–100 → R = default × 1/acc |
+| `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | I₂ | Wheel accuracy 0–100 → R_odom = I₂ / acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
 
 ### 3.11 Update Step
