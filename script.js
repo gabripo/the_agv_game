@@ -802,6 +802,7 @@ function draw() {
   drawRacks();
   drawLandmarks();
   drawExternalSensors();
+  drawCorridorZone();
   drawStartEnd();
   drawTrajectoryPath();
   drawTruePath();
@@ -811,7 +812,6 @@ function draw() {
   }
   drawTrueState(trueSt);
   drawEKFEstimate();
-  drawCorridorZone();
 
   updateMetrics();
 }
@@ -1061,14 +1061,14 @@ function drawCorridorZone() {
   // Draw a hazard glow along the corridor
   noFill();
   for (const pt of pts) {
-    fill(243, 156, 18, 20 - 15 * Math.abs(simTime - (slipStartTime + slipEndTime) / 2) / (slipEndTime - slipStartTime));
+    fill(243, 156, 18, 8 - 6 * Math.abs(simTime - (slipStartTime + slipEndTime) / 2) / (slipEndTime - slipStartTime));
     noStroke();
     circle(pt.x, pt.y, 40);
   }
 
   // Warning label
   if (simTime >= slipStartTime && simTime <= slipEndTime + 10) {
-    fill(243, 156, 18, 180);
+    fill(243, 156, 18, 120);
     noStroke();
     textAlign(CENTER, BOTTOM);
     textSize(11);
