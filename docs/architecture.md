@@ -100,7 +100,7 @@ p5.js draw()
 
 The filter uses a 4-dimensional state for planar pose and velocity:
 
-$$\mathbf{x}_k = \begin{bmatrix} x_k\\ y_k\\ \theta_k\\ v_k \end{bmatrix}$$
+$$\mathbf{x}_k = \begin{bmatrix} x_k\\\\ y_k\\\\ \theta_k\\\\ v_k \end{bmatrix}$$
 
 | Index | Symbol | Description | Unit |
 |-------|--------|-------------|------|
@@ -111,7 +111,7 @@ $$\mathbf{x}_k = \begin{bmatrix} x_k\\ y_k\\ \theta_k\\ v_k \end{bmatrix}$$
 
 ### 3.2 Control Input
 
-$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\ a_k \end{bmatrix}$$
+$$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\\\ a_k \end{bmatrix}$$
 
 | Index | Symbol | Description | Unit |
 |-------|--------|-------------|------|
@@ -120,7 +120,7 @@ $$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\ a_k \end{bmatrix}$$
 
 ### 3.3 Motion Model (Non-Linear)
 
-$$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\ y_k + v_k \sin(\theta_k) \Delta t\\ \theta_k + \dot{\theta} \Delta t\\ v_k + \dot{v} \Delta t \end{bmatrix}$$
+$$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\\\ y_k + v_k \sin(\theta_k) \Delta t\\\\ \theta_k + \dot{\theta} \Delta t\\\\ v_k + \dot{v} \Delta t \end{bmatrix}$$
 
 This is a bicycle model with steering input.
 
@@ -128,7 +128,7 @@ This is a bicycle model with steering input.
 
 $$\mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k}$$
 
-$$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -v_{k-1} \sin(\theta_{k-1}) \Delta t & \cos(\theta_{k-1}) \Delta t\\ 0 & 1 & v_{k-1} \cos(\theta_{k-1}) \Delta t & \sin(\theta_{k-1}) \Delta t\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
+$$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -v_{k-1} \sin(\theta_{k-1}) \Delta t & \cos(\theta_{k-1}) \Delta t\\\\ 0 & 1 & v_{k-1} \cos(\theta_{k-1}) \Delta t & \sin(\theta_{k-1}) \Delta t\\\\ 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
 
 ### 3.5 Predict Step
 
@@ -140,29 +140,29 @@ $$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \math
 
 Measurements are taken to the nearest visual landmark:
 
-$$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
+$$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
 
 ### 3.7 Jacobian of Measurement Model (2×4)
 
 $$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$$
 
-$$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
+$$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
 
 ### 3.8 Merged Measurement Model
 
 When multiple independent sensors observe the state, their measurement models can be stacked into a single observation before the update step. This allows the EKF to process all measurements at once, preserving cross-correlation information.
 
 **Stacked measurement vector (4×1):**
-$$ \mathbf{z}_{\text{merged}} = \begin{bmatrix} \mathbf{z}_{\text{lidar}}\\ \mathbf{z}_{\text{imu}} \end{bmatrix} = \begin{bmatrix} \text{range}\\ \text{bearing}\\ \theta_{\text{measured}}\\ v_{\text{measured}} \end{bmatrix} $$
+$$ \mathbf{z}_{\text{merged}} = \begin{bmatrix} \mathbf{z}_{\text{lidar}}\\\\ \mathbf{z}_{\text{imu}} \end{bmatrix} = \begin{bmatrix} \text{range}\\\\ \text{bearing}\\\\ \theta_{\text{measured}}\\\\ v_{\text{measured}} \end{bmatrix} $$
 
 **Merged measurement function (4×1):**
-$$ h_{\text{merged}}(\mathbf{x}_k) = \begin{bmatrix} h_{\text{lidar}}(\mathbf{x}_k)\\ h_{\text{imu}}(\mathbf{x}_k) \end{bmatrix} $$
+$$ h_{\text{merged}}(\mathbf{x}_k) = \begin{bmatrix} h_{\text{lidar}}(\mathbf{x}_k)\\\\ h_{\text{imu}}(\mathbf{x}_k) \end{bmatrix} $$
 
 **Merged Jacobian (4×4):**
-$$ \mathbf{H}_{\text{merged}} = \begin{bmatrix} \mathbf{H}_{\text{lidar}}\\ \mathbf{H}_{\text{imu}} \end{bmatrix} = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
+$$ \mathbf{H}_{\text{merged}} = \begin{bmatrix} \mathbf{H}_{\text{lidar}}\\\\ \mathbf{H}_{\text{imu}} \end{bmatrix} = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0\\\\ 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
 
 **Merged measurement noise covariance (4×4 block-diagonal):**
-$$ \mathbf{R}_{\text{merged}} = \begin{bmatrix} \mathbf{R}_{\text{lidar}} & \mathbf{0}_{2\times2}\\ \mathbf{0}_{2\times2} & \mathbf{R}_{\text{imu}} \end{bmatrix} $$
+$$ \mathbf{R}_{\text{merged}} = \begin{bmatrix} \mathbf{R}_{\text{lidar}} & \mathbf{0}_{2\times2}\\\\ \mathbf{0}_{2\times2} & \mathbf{R}_{\text{imu}} \end{bmatrix} $$
 
 This merged formulation is equivalent to processing each sensor sequentially (since the sensors are independent, the order does not matter). The standard update step (section 3.11) then uses $\mathbf{H}_{\text{merged}}$, $\mathbf{R}_{\text{merged}}$, and $\mathbf{z}_{\text{merged}}$ in place of their single-sensor counterparts.
 
@@ -170,9 +170,9 @@ This merged formulation is equivalent to processing each sensor sequentially (si
 
 The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction:
 
-$$ \mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
+$$ \mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix} $$
 
-$$ \mathbf{z}_{\text{imu}} = \begin{bmatrix} \theta_{\text{measured}}\\ v_{\text{measured}} \end{bmatrix} $$
+$$ \mathbf{z}_{\text{imu}} = \begin{bmatrix} \theta_{\text{measured}}\\\\ v_{\text{measured}} \end{bmatrix} $$
 
 $$ \mathbf{R}_{\text{imu}} = \sigma_{\text{imu}} \mathbf{I}_2 $$
 
