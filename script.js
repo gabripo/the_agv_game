@@ -10,6 +10,7 @@ class EKF {
     this.defaultR = math.diag([0.5, 0.5]);
     this.Q = math.clone(this.defaultQ);
     this.R = math.clone(this.defaultR);
+    this.imuQ = math.clone(this.defaultQ);
     this.lastK = null;
     this.lastInnov = null;
     this.lastS = null;
@@ -151,11 +152,11 @@ class EKF {
     this.lastS = S;
   }
 
-  imuUpdate(thetaMeasured, noiseTheta) {
-    const H = math.matrix([[0, 0, 1, 0]]);
-    const Rimu = math.diag([noiseTheta]);
-    const z = math.matrix([[thetaMeasured]]);
-    const h = math.matrix([[this.getTheta()]]);
+  imuUpdate(thetaMeasured, vMeasured, noiseScale) {
+    const H = math.matrix([[0, 0, 1, 0], [0, 0, 0, 1]]);
+    const Rimu = math.multiply(math.diag([noiseScale, noiseScale]), noiseScale);
+    const z = math.matrix([[thetaMeasured], [vMeasured]]);
+    const h = math.matrix([[this.getTheta()], [this.getV()]]);
 
     const innov = math.subtract(z, h);
     innov.valueOf()[0][0] = this.normalizeAngle(innov.valueOf()[0][0]);
@@ -697,10 +698,18 @@ function draw() {
 
   // --- SIMULATION STEP ---
   const trueSt = getTrueState(simTime);
-  const control = getCorruptedControl(simTime);
 
-  // EKF predict
+  // EKF predict (odometry-based)
+  const control = getCorruptedControl(simTime);
   ekf.predict(control, DT);
+
+  // IMU measurement update (superimposed on odometry predict)
+  if (sensorImuEnabled) {
+    const imuSigma = 1.0 / Math.max(sensorImuAccuracy, 0.01);
+    const thetaMeas = trueSt.theta + (Math.random() - 0.5) * imuSigma * 0.02;
+    const vMeas = trueSt.v + (Math.random() - 0.5) * imuSigma * 0.01;
+    ekf.imuUpdate(thetaMeas, vMeas, imuSigma * 0.1);
+  }
 
   // Get visible landmarks & update (LIDAR)
   if (sensorLidarEnabled) {
@@ -733,13 +742,6 @@ function draw() {
       gpsNoise * 2
     ];
     ekf.gpsUpdate(gpsMeas);
-  }
-
-  // IMU heading update (interior sensor, always available)
-  if (sensorImuEnabled) {
-    const imuNoiseTheta = 1.0 / Math.max(sensorImuAccuracy, 0.01);
-    const thetaMeas = trueSt.theta + (Math.random() - 0.5) * imuNoiseTheta * 0.2;
-    ekf.imuUpdate(thetaMeas, imuNoiseTheta * 0.05);
   }
 
   // External sensor updates (position beacons)

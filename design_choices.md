@@ -70,7 +70,7 @@ Sensors are grouped into two expandable sections:
 
 | Section | Sensors | Measurement Type | Corridor Behavior |
 |---------|---------|-----------------|-------------------|
-| **Interior** | Wheel Odometry, IMU | Process noise Q scaling, direct heading observation | Always active (odometry: corrupted control; IMU: uncorrupted heading) |
+| **Interior** | Wheel Odometry, IMU | Process noise Q scaling, θ + v measurement update | Always active (odometry: corrupted control; IMU: superimposed θ/v correction) |
 | **Exterior** | LIDAR, GPS, Beacons | Range-bearing or position updates | All disabled in corridor |
 
 ### Corridor Measurement Dropout
@@ -78,8 +78,8 @@ Inside the featureless corridor, ALL exterior measurements stop:
 - **LIDAR** — `getVisibleLandmarks()` returns `[]`
 - **GPS** — gated by `!isInCorridor(simTime)`
 - **Beacons** — their position-update loop is gated by `!isInCorridor(simTime)` (and also by LIDAR being enabled)
-- The **IMU** provides direct heading observations (uncorrupted by slip) throughout the run — interior sensor, always available
-- Only **wheel odometry** (corrupted control) + **IMU** (uncorrupted heading) remains
+- The **IMU** provides heading ($\theta$) and velocity ($v$) measurements via `imuUpdate()`, superimposed on the odometry-based prediction (both contribute simultaneously, always available)
+- Only **wheel odometry** (corrupted control) + **IMU** ($\theta$/$v$ correction) remains
 
 ---
 

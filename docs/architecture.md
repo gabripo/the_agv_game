@@ -43,11 +43,11 @@ p5.js draw()
     │
     ├─ 1. Get true state from trajectory
     ├─ 2. Get corrupted control (slip applied in corridor)
-    ├─ 3. EKF.predict(control, dt)
+    ├─ 3. EKF.predict(control, dt) (odometry-based, always runs)
+    ├─ 3b. If IMU enabled: noisy θ and v → EKF.imuUpdate() (superimposed on odometry, always available interior)
     ├─ 4. Get visible landmarks (empty in corridor)
     ├─ 5. If landmark + LIDAR enabled: noisy measurement → EKF.update(meas, lm)
     ├─ 6. If GPS enabled + outside corridor: noisy GPS → EKF.gpsUpdate()
-    ├─ 6b. If IMU enabled: noisy heading → EKF.imuUpdate() (always available, interior)
     ├─ 7. For each external sensor (beacon): if within range + LIDAR enabled + outside corridor: direct position update → EKF.gpsUpdate()
     ├─ 8. Compute divergence & uncertainty
     ├─ 9. Check divergence (>60px from true) → gameOver('divergence')
@@ -158,34 +158,33 @@ $$\mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k (\mathbf{z}_k - h(\mathbf{x}_k^
 
 $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
-### 3.9 IMU Heading Update
+### 3.9 IMU Measurement Update (Superimposed on Odometry)
 
-The `imuUpdate()` method is a direct heading observation using a 1×4 Jacobian:
+The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction:
 
-$$\mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0 \end{bmatrix}$$
+$$ \mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} $$
+
+$$ \mathbf{z}_{\text{imu}} = \begin{bmatrix} \theta_{\text{measured}} \\ v_{\text{measured}} \end{bmatrix} $$
+
+$$ \mathbf{R}_{\text{imu}} = \sigma_{\text{imu}} \mathbf{I}_2 $$
+
+The `imuUpdate()` method follows the standard EKF measurement update, correcting both heading and velocity estimates from IMU data. This runs on top of the odometry `predict()` — the effects are superimposed, not replaced.
 
 | Symbol | Dim | Description |
 |--------|-----|-------------|
-| `z_θ` | 1×1 | Heading measurement (true heading + noise) |
-| `R_imu` | 1×1 | Heading noise variance (∝ 1/accuracy) |
-| `H_imu` | 1×4 | Selects θ from state vector |
-
-The update follows standard EKF equations but operates on the scalar heading innovation with angle normalization:
-
-$$\text{innov} = \text{normalizeAngle}(z_\theta - \hat{\theta}^-)$$
-
-$$\mathbf{K} = \mathbf{P}^- \mathbf{H}_{\text{imu}}^\mathsf{T} (\mathbf{H}_{\text{imu}} \mathbf{P}^- \mathbf{H}_{\text{imu}}^\mathsf{T} + R_{\text{imu}})^{-1}$$
-
-$$\mathbf{x}^+ = \mathbf{x}^- + \mathbf{K} \cdot \text{innov}$$
+| $\theta_m$ | 1×1 | Heading measurement (true θ + noise ∝ $\sigma_{\text{imu}}$) |
+| $v_m$ | 1×1 | Velocity measurement (true v + noise ∝ $\sigma_{\text{imu}}$) |
+| $\sigma_{\text{imu}}$ | 1×1 | IMU noise std dev (∝ 1/accuracy) |
+| $\mathbf{R}_{\text{imu}}$ | 2×2 diagonal | IMU measurement noise covariance |
 
 ### 3.10 Covariance Matrices
 
 | Matrix | Dimension | Description | Default | Slider Mapping |
 |--------|-----------|-------------|---------|----------------|
-| `Q` | 4×4 diagonal | Process noise (trust model) | diag(0.1, 0.1, 0.05, 0.02) | Slider 0–100 → Q = default × 10^(1 − accuracy/50) |
-| `R` | 2×2 diagonal | Measurement noise (trust sensors) | diag(0.5, 0.5) | Slider 0–100 → R = default × 10^(1 − accuracy/50) |
+| `Q` | 4×4 diagonal | Odometry process noise | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–100 → Q = default × 1/acc |
+| `Q_imu` | 4×4 diagonal | IMU process noise | diag(0.5, 0.5, 0.1, 0.05) | IMU accuracy 0–100 → Q_imu = default × 1/acc |
+| `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–100 → R = default × 1/acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
-| `R_imu` | 1×1 | IMU heading noise | — | ∝ 1/accuracy; 0 → ∞, 100 → 0 |
 
 ---
 
@@ -213,7 +212,7 @@ A coordinate display below the AGV speed slider shows the current A start / B en
 | **LIDAR landmark dropout** | `getVisibleLandmarks()` returns empty array inside corridor |
 | **GPS dropout** | GPS update gated by `!isInCorridor(simTime)` |
 | **Beacon dropout** | External sensor position updates gated by `!isInCorridor(simTime)` |
-| **IMU availability** | Interior sensor — always available, even inside corridor (uncorrupted heading) |
+| **IMU availability** | Interior sensor — always available, even inside corridor (replaces odometry predict with IMU dead-reckoning) |
 | **Control corruption** | `getCorruptedControl()` subtracts a sinusoidal steering bias (max 0.015 rad/timestep) from the nominal `thetaDot` during the corridor window |
 | **Noise** | Small random noise (±0.002 rad/timestep) added to prevent exact reproducibility |
 
@@ -301,7 +300,7 @@ The dollar savings scale with the actual sensor configuration: more/better senso
 |------|---------------|
 | `index.html` | DOM structure, CDN script tags, 3-tier accordion with KaTeX, sensor/route/metrics/savings HTML |
 | `styles.css` | All styles (~710 lines): layout grid, dashboard cards, accordion, sliders, responsive breakpoints, animations |
-| `script.js` | `EKF` class (including `imuUpdate`, `gpsUpdate`), simulation world, p5.js setup/draw, rendering (GPS/IMU indicators), UI/dashboard, sensor/business logic, Node.js exports |
+| `script.js` | `EKF` class (including `imuPredict`, `gpsUpdate`), simulation world, p5.js setup/draw, rendering (GPS/IMU indicators), UI/dashboard, sensor/business logic, Node.js exports |
 | `tests/setup.js` | Provides `global.math` from npm `mathjs` package |
 | `tests/test_ekf.js` | 28 unit tests for the EKF class |
 | `tests/test_functions.js` | 17 unit tests for pure simulation functions |

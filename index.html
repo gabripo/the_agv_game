@@ -142,12 +142,12 @@
               <div class="katex-block">$$ \sigma_{\text{imu}} = \frac{1}{a_{\text{imu}}}, \qquad
                 \sigma_{\text{beacon}} = \frac{1}{a_{\text{beacon}}} $$</div>
               <p style="font-size: 0.8rem; color: var(--text-secondary);">
-                Each $a$ is the slider value for that sensor. Higher accuracy → smaller $\sigma$ → the filter trusts
+                Each $a$ is the slider value for that sensor. Higher accuracy &rarr; smaller $\sigma$ &rarr; the filter trusts
                 that sensor more. At $a = 0$ the noise is infinite (sensor ignored); at $a = 100$ the noise is
                 effectively zero. The beacon accuracy $a_{\text{beacon}}$ is set per-beacon in the list below the LIDAR
                 range slider. Internally the EKF packs these $\sigma$ values into the noise covariance matrices
-                $\mathbf{Q}$ (process) and $\mathbf{R}$ (measurement).
-              </p>
+                $\mathbf{Q}$ (process) and $\mathbf{R}$ (measurement). The IMU $\sigma_{\text{imu}}$ scales the
+                process noise $\mathbf{Q}_{\text{imu}}$ used in the IMU-driven dead-reckoning step.</p>
 
               <p><strong>Key Insight:</strong> Because both <strong>f</strong> and <strong>h</strong> are non-linear, we
                 linearize them via their Jacobians at each timestep — this is what makes the filter <em>Extended</em>.
@@ -274,19 +274,19 @@
                     <span>IMU</span>
                   </label>
                   <input type="range" class="sensor-slider" id="imuAccuracy" min="0" max="100" step="0.1" value="1.0"
-                    title="Accuracy a_imu in [0,100]. Heading noise sigma_imu ∝ 1/a_imu. Higher -> lower sigma_imu -> filter trusts IMU heading more.">
+                    title="Accuracy a_imu in [0,100]. IMU noise sigma_imu ∝ 1/a_imu. Higher -> lower sigma_imu -> filter trusts IMU integration more.">
                   <span class="sensor-value" id="imuValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="sigma_imu = 1 / a_imu (clamped at a_imu >= 0.01). At a_imu = 0 -> sigma_imu = inf (ignore IMU); at a_imu = 100 -> sigma_imu ≈ 0 (perfect heading).">ⓘ</span>
+                    title="sigma_imu = 1 / a_imu (clamped at a_imu >= 0.01). At a_imu = 0 -> sigma_imu = inf (ignore IMU); at a_imu = 100 -> sigma_imu ≈ 0 (near-perfect IMU).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{imu}}$ → $\sigma_{\text{imu}} = 1 / a_{\text{imu}}$.<br>
-                  Higher = lower heading
-                  std dev = filter trusts IMU more.<br>
-                  At $a_{\text{imu}} = 0$, $\sigma_{\text{imu}}$ is infinite
-                  (filter ignores IMU).<br>
-                  At $a_{\text{imu}} = 100$, $\sigma_{\text{imu}} \approx 0$
-                  (near-perfect heading).
+                  IMU measures heading ($\theta$) via gyroscope and velocity ($v$) via accelerometer,<br>
+                  with noise $\propto \sigma_{\text{imu}}$. These are superimposed as a measurement update<br>
+                  on top of the odometry prediction (both contribute simultaneously).<br>
+                  Higher $a_{\text{imu}}$ = lower $\sigma_{\text{imu}}$ = filter trusts IMU measurements more.<br>
+                  At $a_{\text{imu}} = 0$, $\sigma_{\text{imu}}$ is infinite (filter ignores IMU).<br>
+                  At $a_{\text{imu}} = 100$, $\sigma_{\text{imu}} \approx 0$ (near-perfect heading &amp; velocity readings).
                 </div>
               </div>
               <div style="margin-top: 12px;">
