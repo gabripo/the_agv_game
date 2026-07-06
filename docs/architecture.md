@@ -256,7 +256,13 @@ $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
 ### 4.1 Trajectory
 
-The reference path is a cubic Bézier curve from the starting point to the end point. Users can drag the A/B markers on the canvas to reposition. The trajectory is pre-computed at integer timesteps and interpolated with linear interpolation between steps.
+The reference path is a clothoid (Euler spiral) connecting the start and end points. Curvature varies linearly from 0 at the start to $-0.002$ at the end, creating a smooth C-curve. The clothoid is built in a local frame via numerical integration of:
+
+$$\frac{dx}{ds} = \cos\theta,\quad \frac{dy}{ds} = \sin\theta,\quad \frac{d\theta}{ds} = k(s)$$
+
+where $k(s) = k_0 + c \cdot s$, then scaled, rotated, and translated to match the world endpoints. Users can drag the A/B markers on the canvas to reposition.
+
+The trajectory is sampled at integer timesteps and interpolated with linear interpolation between steps.
 
 Each trajectory point stores `{x, y, theta, v}` where `v` follows a sinusoidal speed profile:
 

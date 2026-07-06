@@ -310,8 +310,8 @@ let slipStartTime = CORRIDOR_T_START;
 let slipEndTime = CORRIDOR_T_END;
 
 let agvSpeed = 2.0;
-let startPoint = { x: 100, y: 430 };
-let endPoint = { x: 700, y: 160 };
+let startPoint = { x: 80, y: 430 };
+let endPoint = { x: 650, y: 150 };
 let userCorridorStart = CORRIDOR_T_START;
 let userCorridorEnd = CORRIDOR_T_END;
 
@@ -328,30 +328,58 @@ function cubicBezier(p0, p1, p2, p3, t) {
 
 function buildTrajectory() {
   trajectory = [];
-  const p0 = { x: startPoint.x, y: startPoint.y };
-  const dx = endPoint.x - startPoint.x;
-  const dy = endPoint.y - startPoint.y;
-  // Control-point offsets preserved proportionally from original layout
-  const p1 = { x: startPoint.x + dx * (130 / 550), y: startPoint.y };
-  const p2 = { x: endPoint.x - dx * (200 / 550), y: endPoint.y + Math.abs(dy) * (140 / 280) };
-  const p3 = { x: endPoint.x, y: endPoint.y };
+  const N = TOTAL_TIME;
 
-  for (let i = 0; i <= TOTAL_TIME; i++) {
-    const t = i / TOTAL_TIME;
-    const pt = cubicBezier(p0, p1, p2, p3, t);
-    // Slow down near the middle of the trajectory (tightest curves)
-    const speedFactor = 0.6 + 0.4 * Math.cos(t * Math.PI);
-    trajectory.push({ x: pt.x, y: pt.y, theta: 0, v: agvSpeed * speedFactor });
+  // Clothoid (Euler spiral) built in a local frame, then similarity-transformed
+  // to match startPoint → endPoint.  Curvature k(s) = k0 + c·s varies linearly.
+  const L = 600;
+  const k0 = 0;
+  const k1 = -0.002;
+  const c = (k1 - k0) / L;
+  const theta0 = 0.42;
+
+  // Numerical integration of the clothoid ODE:
+  //   dx/ds = cos(θ),  dy/ds = sin(θ),  dθ/ds = k(s)
+  const ds = L / N;
+  const localPts = [];
+  let x = 0, y = 0;
+
+  for (let i = 0; i <= N; i++) {
+    const s = i * ds;
+    const theta = theta0 + k0 * s + 0.5 * c * s * s;
+    if (i > 0) {
+      x += ds * Math.cos(theta);
+      y += ds * Math.sin(theta);
+    }
+    localPts.push({ x, y, theta });
   }
 
-  for (let i = 0; i < trajectory.length; i++) {
-    if (i < trajectory.length - 1) {
-      const dx = trajectory[i + 1].x - trajectory[i].x;
-      const dy = trajectory[i + 1].y - trajectory[i].y;
-      trajectory[i].theta = Math.atan2(dy, dx);
-    } else {
-      trajectory[i].theta = trajectory[i - 1].theta;
-    }
+  // Similarity transform: scale + rotate + translate to world endpoints
+  const localEnd = localPts[N];
+  const localDx = localEnd.x - localPts[0].x;
+  const localDy = localEnd.y - localPts[0].y;
+  const targetDx = endPoint.x - startPoint.x;
+  const targetDy = endPoint.y - startPoint.y;
+
+  const localDist = Math.sqrt(localDx * localDx + localDy * localDy);
+  const targetDist = Math.sqrt(targetDx * targetDx + targetDy * targetDy);
+
+  const scale = targetDist / localDist;
+  const rotAngle = Math.atan2(targetDy, targetDx) - Math.atan2(localDy, localDx);
+
+  for (let i = 0; i <= N; i++) {
+    const pt = localPts[i];
+    const sx = pt.x * scale;
+    const sy = pt.y * scale;
+    const rx = sx * Math.cos(rotAngle) - sy * Math.sin(rotAngle);
+    const ry = sx * Math.sin(rotAngle) + sy * Math.cos(rotAngle);
+    const fx = startPoint.x + rx;
+    const fy = startPoint.y + ry;
+    const ftheta = Math.atan2(Math.sin(pt.theta + rotAngle), Math.cos(pt.theta + rotAngle));
+
+    const t = i / N;
+    const speedFactor = 0.6 + 0.4 * Math.cos(t * Math.PI);
+    trajectory.push({ x: fx, y: fy, theta: ftheta, v: agvSpeed * speedFactor });
   }
 }
 
@@ -1612,8 +1640,8 @@ function resetConfig() {
   updateSliderBg(document.getElementById('divergenceThreshold'));
 
   // Route — reset start/end points and corridor markers
-  startPoint = { x: 100, y: 430 };
-  endPoint = { x: 700, y: 160 };
+  startPoint = { x: 80, y: 430 };
+  endPoint = { x: 650, y: 150 };
   userCorridorStart = CORRIDOR_T_START;
   userCorridorEnd = CORRIDOR_T_END;
   slipMode = 'deterministic';
