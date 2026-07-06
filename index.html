@@ -245,6 +245,38 @@
             style="margin-top: 4px; padding: 10px; font-size: 0.85rem; background: rgba(255,255,255,0.06); color: var(--text-secondary);">↺
             Reset Configuration</button>
 
+          <details class="accordion-section">
+            <summary>Live Metrics</summary>
+            <div class="accordion-content" style="padding: 12px 16px;">
+              <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                <strong>Status</strong> shows the simulation state. <br>
+                <strong>Uncertainty</strong> is the trace of the
+                EKF's
+                position covariance — higher means the filter is less confident about where the AGV is.<br>
+                <strong>EKF Divergence</strong> is the Euclidean distance between the EKF estimate and the true AGV
+                position;
+                if it exceeds 60&thinsp;px the filter has lost track.
+              </p>
+              <div class="metric-row">
+                <span class="metric-label">Status</span>
+                <span class="metric-value" id="statusDisplay">
+                  <span class="status-led green" id="statusLed"></span>
+                  <span id="statusText">Awaiting Start</span>
+                </span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Position Uncertainty <span
+                    style="font-family: monospace;">(tr(P))</span></span>
+                <span class="metric-value" id="uncertaintyDisplay">—</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">EKF Divergence</span>
+                <span class="metric-value" id="divergenceDisplay">—</span>
+              </div>
+              <button class="btn-magic" id="btnMagic">Show the Magic</button>
+              <div id="matrixDisplay" style="display: none; margin-top: 12px; overflow-x: auto;"></div>
+            </div>
+          </details>
           <details class="accordion-section" id="accSensors">
             <summary>Sensors Configuration</summary>
             <div class="accordion-content" style="padding: 12px 16px;">
@@ -374,39 +406,6 @@
                 </p>
               </div>
             </div>
-          </div>
-        </details>
-
-        <details class="accordion-section">
-          <summary>Live Metrics</summary>
-          <div class="accordion-content" style="padding: 12px 16px;">
-            <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
-              <strong>Status</strong> shows the simulation state. <br>
-              <strong>Uncertainty</strong> is the trace of the
-              EKF's
-              position covariance — higher means the filter is less confident about where the AGV is.<br>
-              <strong>EKF Divergence</strong> is the Euclidean distance between the EKF estimate and the true AGV
-              position;
-              if it exceeds 60&thinsp;px the filter has lost track.
-            </p>
-            <div class="metric-row">
-              <span class="metric-label">Status</span>
-              <span class="metric-value" id="statusDisplay">
-                <span class="status-led green" id="statusLed"></span>
-                <span id="statusText">Awaiting Start</span>
-              </span>
-            </div>
-            <div class="metric-row">
-              <span class="metric-label">Position Uncertainty <span
-                  style="font-family: monospace;">(tr(P))</span></span>
-              <span class="metric-value" id="uncertaintyDisplay">—</span>
-            </div>
-            <div class="metric-row">
-              <span class="metric-label">EKF Divergence</span>
-              <span class="metric-value" id="divergenceDisplay">—</span>
-            </div>
-            <button class="btn-magic" id="btnMagic">Show the Magic</button>
-            <div id="matrixDisplay" style="display: none; margin-top: 12px; overflow-x: auto;"></div>
           </div>
         </details>
 
