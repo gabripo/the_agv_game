@@ -822,25 +822,6 @@ function draw() {
     ekf.gpsUpdate(gpsMeas);
   }
 
-  // External sensor updates (position beacons)
-  if (sensorLidarEnabled && !isInCorridor(simTime)) {
-    for (const s of externalSensors) {
-      const dx = trueSt.x - s.x;
-      const dy = trueSt.y - s.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < lidarRange) {
-        const noise = 1.0 / Math.max(s.accuracy, 0.01);
-        const meas = [
-          trueSt.x + (Math.random() - 0.5) * noise * 4,
-          trueSt.y + (Math.random() - 0.5) * noise * 4,
-          noise * 2,
-          noise * 2
-        ];
-        ekf.gpsUpdate(meas);
-      }
-    }
-  }
-
   // Compute divergence
   const ex = ekf.getX() - trueSt.x;
   const ey = ekf.getY() - trueSt.y;

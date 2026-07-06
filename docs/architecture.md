@@ -230,9 +230,11 @@ The IMU update **runs before** the wheel encoder update, while the heading covar
 
 #### 3.4.3 Measurement Model — LIDAR (Range-Bearing)
 
-Measurements are taken to the nearest visual landmark:
+Measurements are taken to the nearest visual landmark (default positions or user-added beacons):
 
 $$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
+
+Beacons are user-placed markers that behave identically to default landmarks — they are detected by LIDAR within range and contribute as range-bearing measurements. All landmarks (default and beacons) are gated by `getVisibleLandmarks()`, which returns an empty set inside the corridor.
 
 ##### 3.4.3.1 Jacobian of LIDAR Measurement Model (2×4)
 
@@ -240,9 +242,9 @@ $$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$
 
 $$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
 
-#### 3.4.4 GPS and Beacon Position Update
+#### 3.4.4 GPS Position Update
 
-GPS and beacons both provide direct position observations via `EKF.gpsUpdate()`. The measurement model is a direct observation of the $(x, y)$ position:
+GPS provides a direct position observation via `EKF.gpsUpdate()`. The measurement model is a direct observation of the $(x, y)$ position:
 
 $$ \mathbf{H}_{\text{gps}} = \begin{bmatrix} 1 & 0 & 0 & 0\\\\ 0 & 1 & 0 & 0 \end{bmatrix} $$
 
@@ -250,7 +252,7 @@ $$ \mathbf{z}_{\text{gps}} = \begin{bmatrix} x_{\text{measured}}\\\\ y_{\text{me
 
 $$ \mathbf{R}_{\text{gps}} = \sigma_{\text{gps}}^2 \times \mathbf{I}_2 \qquad \sigma_{\text{gps}} = 1 / \text{accuracy} $$
 
-Both sensors are **exterior** sensors — they are gated by `!isInCorridor(simTime)` and drop out inside the featureless corridor zone. Beacons reuse the same `gpsUpdate()` method with the beacon's own position and accuracy.
+GPS is an **exterior** sensor — it is gated by `!isInCorridor(simTime)` and drops out inside the featureless corridor zone.
 
 #### 3.4.5 Update Equations
 
@@ -270,13 +272,12 @@ Rather than stacking all measurements into a single batch, the EKF applies **seq
 | 2 | Wheel odometry | `[[0,0,1,0],[0,0,0,1]]` | $\theta_k$, $v_k$ |
 | 3 | LIDAR | `jacobianH(x, lm)` — state-dependent 2×4 | $d_k$, $\alpha_k$ |
 | 4 | GPS | `[[1,0,0,0],[0,1,0,0]]` | $x_k$, $y_k$ |
-| 5 | Beacons | `[[1,0,0,0],[0,1,0,0]]` | $x_k$, $y_k$ |
 
 **Why IMU before odometry.** Both interior sensors observe $\theta$ and $v$ with the same H structure, but the IMU is **unbiased** while the wheel encoder reading is **biased by corridor slip**. The IMU runs first, when the heading covariance $P[2,2]$ is still large after the predict step. This produces a high Kalman gain $K_{\text{imu}} \approx 0.9$, allowing the IMU to dominate the heading correction. The odometry update runs second, after the IMU has collapsed $P[2,2]$; its gain is consequently low ($K_{\text{odom}} \approx 0.09$), minimising the biased encoder's pull.
 
-**LIDAR, GPS, and beacons** refine position and heading in fixed order. Because each update reduces the relevant covariance entries, later sensors naturally have smaller gains for dimensions already well-observed — but they remain effective for dimensions the earlier sensors cannot see (e.g., GPS corrects $x$, $y$ which IMU and odometry do not touch).
+**LIDAR and GPS** refine position and heading in fixed order. Because each update reduces the relevant covariance entries, later sensors naturally have smaller gains for dimensions already well-observed — but they remain effective for dimensions the earlier sensors cannot see (e.g., GPS corrects $x$, $y$ which IMU and odometry do not touch).
 
-The IMU and odometry use constant Jacobians (linear measurement models), so their H matrices never need recomputation. The LIDAR measurement model is non-linear, so its Jacobian $`\mathbf{H}_k = \partial h / \partial \mathbf{x}`$ is recomputed from the predicted state each time. GPS and beacons also use a constant H (direct position readout).
+The IMU and odometry use constant Jacobians (linear measurement models), so their H matrices never need recomputation. The LIDAR measurement model is non-linear, so its Jacobian $`\mathbf{H}_k = \partial h / \partial \mathbf{x}`$ is recomputed from the predicted state each time. GPS also uses a constant H (direct position readout).
 
 **Covariance Matrices**
 
