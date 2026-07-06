@@ -415,7 +415,7 @@ function buildRacks() {
     { x: 490, y: 360, w: 18, h: 30 },
     { x: 540, y: 335, w: 18, h: 30 },
     // Visual context racks near start (safe, parallel to path)
-    { x: 180, y: 370, w: 28, h: 14 },
+    { x: 180, y: 360, w: 28, h: 14 },
     { x: 180, y: 330, w: 28, h: 14 },
     { x: 180, y: 290, w: 28, h: 14 },
   ];
