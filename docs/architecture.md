@@ -254,13 +254,31 @@ Both sensors are **exterior** sensors — they are gated by `!isInCorridor(simTi
 | `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | 0.01 × I₂ | Wheel accuracy 0–50 → R_odom = default / acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
 
-### 3.12 Update Step
+### 3.12 Update Step — Sequential Measurement Updates
+
+All measurement updates follow the standard Kalman equations:
 
 $$\mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1}$$
 
 $$\mathbf{x}_k^+ = \mathbf{x}_k^- + \mathbf{K}_k (\mathbf{z}_k - h(\mathbf{x}_k^-))$$
 
 $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
+
+Rather than stacking all measurements into a single batch, the EKF applies **sequential updates** — each sensor reads the *posterior* state and covariance left by the previous update. Each uses its own fixed or computed Jacobian:
+
+| Order | Sensor | H matrix | Observes |
+|-------|--------|----------|----------|
+| 1 | IMU | `[[0,0,1,0],[0,0,0,1]]` | $\theta_k$, $v_k$ |
+| 2 | Wheel odometry | `[[0,0,1,0],[0,0,0,1]]` | $\theta_k$, $v_k$ |
+| 3 | LIDAR | `jacobianH(x, lm)` — state-dependent 2×4 | $d_k$, $\alpha_k$ |
+| 4 | GPS | `[[1,0,0,0],[0,1,0,0]]` | $x_k$, $y_k$ |
+| 5 | Beacons | `[[1,0,0,0],[0,1,0,0]]` | $x_k$, $y_k$ |
+
+**Why IMU before odometry.** Both interior sensors observe $\theta$ and $v$ with the same H structure, but the IMU is **unbiased** while the wheel encoder reading is **biased by corridor slip**. The IMU runs first, when the heading covariance $P[2,2]$ is still large after the predict step. This produces a high Kalman gain $K_{\text{imu}} \approx 0.9$, allowing the IMU to dominate the heading correction. The odometry update runs second, after the IMU has collapsed $P[2,2]$; its gain is consequently low ($K_{\text{odom}} \approx 0.09$), minimising the biased encoder's pull.
+
+**LIDAR, GPS, and beacons** refine position and heading in fixed order. Because each update reduces the relevant covariance entries, later sensors naturally have smaller gains for dimensions already well-observed — but they remain effective for dimensions the earlier sensors cannot see (e.g., GPS corrects $x$, $y$ which IMU and odometry do not touch).
+
+The IMU and odometry use constant Jacobians (linear measurement models), so their H matrices never need recomputation. The LIDAR measurement model is non-linear, so its Jacobian $`\mathbf{H}_k = \partial h / \partial \mathbf{x}`$ is recomputed from the predicted state each time. GPS and beacons also use a constant H (direct position readout).
 
 ---
 
