@@ -41,14 +41,10 @@ p5.js draw()
     ├─ Check: running? → render idle prompt
     ├─ Check: simTime ≥ TOTAL_TIME? → routeComplete()
     │
-     ├─ 1. Get true state from trajectory
-    ├─ 2. Get nominal control (clean thetaDot) → EKF.predict(control, dt)
+    ├─ 1. Get true state from trajectory
+    ├─ 2. Get nominal control (clean thetaDot + a) → EKF.predict(control, dt)
     ├─ 3. If IMU enabled: noisy θ and v → EKF.imuUpdate() (unbiased, runs before odometry while P is large)
     ├─ 3b. If wheel encoders enabled: pre-integrate corrupted thetaDot into encoderTheta → EKF.odomUpdate(encoderTheta, vMeas)
-    ├─ 4. Get visible landmarks (empty in corridor)
-    ├─ 5. If landmark + LIDAR enabled: noisy measurement → EKF.update(meas, lm)
-    ├─ 6. If GPS enabled + outside corridor: noisy GPS → EKF.gpsUpdate()
-    ├─ 7. For each external sensor (beacon): if within range + LIDAR enabled + outside corridor: direct position update → EKF.gpsUpdate()
     ├─ 4. Get visible landmarks (empty in corridor)
     ├─ 5. If landmark + LIDAR enabled: noisy measurement → EKF.update(meas, lm)
     ├─ 6. If GPS enabled + outside corridor: noisy GPS → EKF.gpsUpdate()
@@ -58,9 +54,9 @@ p5.js draw()
     ├─ 10. Check collision (EKF estimate vs. rack bounding boxes) → gameOver('collision')
     ├─ 11. Check off-canvas (EKF estimate out of bounds) → gameOver('lost')
     ├─ 12. Push to history arrays (up to 2000 points)
-    ├─ 13. Render: racks, landmarks (highlighted active beacons), path, true/ekf trails, measurements
-    ├─ 14. Update dashboard metrics
-    └─ 15. simTime += DT × (agvSpeed / 2.0)
+    ├─ 13. simTime += DT × (agvSpeed / 2.0) × simSpeed
+    ├─ 14. Render: racks, landmarks, beacons, corridor zone, start/end, path, true/ekf trails, measurements, AGVs
+    └─ 15. Update dashboard metrics
 ```
 
 ### 2.2 State Machine
@@ -128,7 +124,7 @@ The acceleration is derived from the trajectory's varying velocity profile — t
 
 $$a_k = \frac{v_{k+1} - v_k}{\Delta t}$$
 
-where $v_k = \texttt{agvSpeed} \cdot (0.6 + 0.4 \cdot \cos(\pi \cdot k / N))$ and $N = \texttt{TOTAL\_TIME}$.
+where $`v_k = \texttt{agvSpeed} \cdot (0.6 + 0.4 \cdot \cos(\pi \cdot k / N))`$ and $`N = \texttt{TOTAL\_ TIME}`$.
 
 There are two variants of the control function, serving different roles in the simulation:
 
@@ -151,15 +147,19 @@ This is a variable-velocity bicycle model: the steering rate $\dot{\theta}_k$ ro
 
 ### 3.4 Jacobian of Motion Model (4×4)
 
-$$\mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_{k-1}, \mathbf{u}_k}$$
+$$\mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k, \mathbf{u}_k}$$
 
-$$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -v_{k-1} \sin(\theta_{k-1}) \Delta t & \cos(\theta_{k-1}) \Delta t\\\\ 0 & 1 & v_{k-1} \cos(\theta_{k-1}) \Delta t & \sin(\theta_{k-1}) \Delta t\\\\ 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
+$$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -v_k \sin(\theta_k) \Delta t & \cos(\theta_k) \Delta t\\\\ 0 & 1 & v_k \cos(\theta_k) \Delta t & \sin(\theta_k) \Delta t\\\\ 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
 
 ### 3.5 Predict Step
 
 $$\mathbf{x}_k^- = f(\mathbf{x}_{k-1}, \mathbf{u}_k)$$
 
+$$\mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \big|_{\mathbf{x}_k^-, \mathbf{u}_k}$$
+
 $$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \mathbf{Q}$$
+
+The Jacobian is evaluated at the **predicted** state $\mathbf{x}_k^-$ (after the nonlinear `f()` call), not at the prior $\mathbf{x}_{k-1}$. This matches the code's sequence: `state = f(state, control, dt)` first, then `jacobianF(state)`.
 
 ### 3.6 Odometry Sensor (Wheel Encoders)
 
@@ -197,7 +197,7 @@ $$\mathbf{H}_{\text{odom}} = \frac{\partial h_{\text{odom}}}{\partial \mathbf{x}
 
 $$\mathbf{R}_{\text{odom}} = \sigma_{\text{odom}}^2 \times \mathbf{I}_2$$
 
-where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}$ → stronger trust in the (biased) pre-integrated encoder → more divergence in the corridor.
+where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. The default baseline is $\mathbf{R}_{\text{odom}} = 0.01\,\mathbf{I}_2$ (before scaling by accuracy). Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}$ → stronger trust in the (biased) pre-integrated encoder → more divergence in the corridor.
 
 The odometry Jacobian $`\mathbf{H}_{\text{odom}}`$ has the same structure as the IMU Jacobian $`\mathbf{H}_{\text{imu}}`$ because both sensors observe the same state variables ($\theta$ and $v$). They differ only in their noise characteristics ($`\mathbf{R}_{\text{odom}}`$ vs $`\mathbf{R}_{\text{imu}}`$) and availability: odometry is subject to corridor dropout, while the IMU is an interior sensor always available.
 
@@ -221,7 +221,7 @@ $$ \mathbf{H}_{\text{imu}} = \begin{bmatrix} 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \en
 
 $$ \mathbf{z}_{\text{imu}} = \begin{bmatrix} \theta_{\text{measured}}\\\\ v_{\text{measured}} \end{bmatrix} $$
 
-$$ \mathbf{R}_{\text{imu}} = (0.01 \cdot \sigma_{\text{imu}}) \mathbf{I}_2 \qquad \sigma_{\text{imu}} = 1 / \text{accuracy} $$
+$$ \mathbf{R}_{\text{imu}} = (0.01 \cdot \sigma_{\text{imu}})^2 \mathbf{I}_2 \qquad \sigma_{\text{imu}} = 1 / \text{accuracy} $$
 
 The IMU update **runs before** the wheel encoder update, while the heading covariance is still large after the predict step. This allows the IMU to correct the heading toward the true value before the biased encoder pulls it back. At accuracy=1.0, the IMU's Kalman gain is ≈0.9, dominating the subsequent encoder correction and keeping the EKF on track even inside the corridor.
 
@@ -237,9 +237,8 @@ The IMU update **runs before** the wheel encoder update, while the heading covar
 | Matrix | Dimension | Description | Default | Slider Mapping |
 |--------|-----------|-------------|---------|----------------|
 | `Q` | 4×4 diagonal | Process noise (predict step) | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–50 → Q = default × 1/acc |
-| `Q_imu` | 4×4 diagonal | IMU process noise | diag(0.5, 0.5, 0.1, 0.05) | IMU accuracy 0–50 → Q_imu = default × 1/acc |
 | `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–50 → R = default × 1/acc |
-| `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | I₂ | Wheel accuracy 0–50 → R_odom = I₂ / acc |
+| `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | 0.01 × I₂ | Wheel accuracy 0–50 → R_odom = default / acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
 
 ### 3.11 Update Step
@@ -288,7 +287,7 @@ A coordinate display below the AGV speed slider shows the current A start / B en
 | **Beacon dropout** | External sensor position updates gated by `!isInCorridor(simTime)` |
 | **IMU availability** | Interior sensor — always available, even inside corridor. Runs before the wheel encoder update to correct heading while the covariance is still large. |
 | **Control corruption** | Predict uses `getNominalControl()` (clean thetaDot). Encoder readings from `getCorruptedControl()` subtract a sinusoidal steering bias (max 0.020 rad/timestep) from the nominal `thetaDot` during the corridor window. The bias accumulates in the pre-integrated encoder heading, driving the EKF off the true path. |
-| **Noise** | Small random noise (±0.002 rad/timestep) added to prevent exact reproducibility |
+| **Noise** | Small random noise (±0.001 rad/timestep) added to prevent exact reproducibility |
 
 ### 4.4 Slip Mode
 
@@ -347,24 +346,26 @@ The dollar savings scale with the actual sensor configuration: more/better senso
 
 ## 6. Rendering Pipeline
 
-### 6.1 Layer Order (back to front)
+### 6.1 Layer Order (back to front) — simulation running
 
 ```
 1. Floor + grid
-2. Trajectory path (faded)
-3. Racks (with hazard stripes)
-4. Landmarks (beacons with active/inactive highlighting)
-5. Start/End zones (A/B markers)
-6. True position trail (ghost grey polyline, up to 2000 points)
-7. EKF estimate trail (blue polyline)
-8. Corridor zone warning overlay
-9. Raw sensor measurement (red dot + landmark line)
-10. True AGV (ghost, 25% opacity)
-11. EKF AGV (solid blue, direction indicator with LIDAR sweep arc)
+2. Racks (with hazard stripes)
+3. Landmarks / beacons (active/inactive highlighting; rendered together)
+4. External sensors (beacon markers)
+5. Corridor zone warning overlay
+6. Start/End zones (A/B markers)
+7. Trajectory path (faded)
+8. True position trail (ghost grey polyline)
+9. EKF estimate trail (blue polyline)
+10. Raw sensor measurement (red dot + landmark line)
+11. True AGV (ghost, 25% opacity)
+12. EKF AGV (solid blue, direction indicator with LIDAR sweep arc)
     - GPS active indicator (green dot + "GPS" label) above EKF when GPS on
     - IMU active indicator (green dot + "IMU" label) above EKF when IMU on
-12. Red flash overlay (on collision/divergence)
 ```
+
+The order differs between the `completed/crashed` and `!running` states (red flash is a DOM overlay, not a canvas layer).
 
 ---
 
