@@ -115,18 +115,33 @@ $$\mathbf{x}_k = \begin{bmatrix} x_k\\\\ y_k\\\\ \theta_k\\\\ v_k \end{bmatrix}$
 
 ### 3.2 Control Input
 
+The control input represents the **commanded** motion — what the robot's controller tells the motors to do:
+
 $$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\\\ a_k \end{bmatrix}$$
 
 | Index | Symbol | Description | Unit |
 |-------|--------|-------------|------|
-| 0 | `θ̇` | Steering rate | rad/timestep |
+| 0 | `θ̇` | Steering (yaw) rate | rad/timestep |
 | 1 | `a` | Acceleration | px/timestep² |
+
+The acceleration is always zero (`a = 0`) — the AGV travels at constant velocity `v = agvSpeed` throughout the trajectory.
+
+There are two variants of the control function, serving different roles in the simulation:
+
+- **`getNominalControl(t)`** — extracts the clean commanded yaw rate from the trajectory heading differences:
+  ```javascript
+  dTheta = trajectory[k+1].theta - trajectory[k].theta
+  thetaDot = normalizeAngle(dTheta) / DT
+  ```
+  This is used in the EKF **predict** step. The motion model assumes the robot faithfully executes the commanded turn.
+
+- **`getCorruptedControl(t)`** — same nominal yaw rate, but inside the corridor window it applies a sinusoidal slip bias (`slipMag = 0.020 · sin(progress · π)`) and small random noise. This function is **not** used in the predict step; instead it drives the **wheel encoder measurement** (pre-integrated into `encoderTheta`), creating a discrepancy between the clean prediction and the slip-corrupted encoder reading.
 
 ### 3.3 Motion Model (Non-Linear)
 
-$$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\\\ y_k + v_k \sin(\theta_k) \Delta t\\\\ \theta_k + \dot{\theta} \Delta t\\\\ v_k + \dot{v} \Delta t \end{bmatrix}$$
+$$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\\\ y_k + v_k \sin(\theta_k) \Delta t\\\\ \theta_k + \dot{\theta}_k \Delta t\\\\ v_k + a_k \Delta t \end{bmatrix}$$
 
-This is a bicycle model with steering input.
+This is a constant-velocity bicycle model: the steering rate $\dot{\theta}_k$ rotates the heading, and the heading determines the direction of the velocity vector $v_k$. Position is advanced by $v_k \Delta t$ along the heading direction. The control comes from `getNominalControl(t)` — the uncorrupted commanded trajectory, free of any corridor slip bias.
 
 ### 3.4 Jacobian of Motion Model (4×4)
 
