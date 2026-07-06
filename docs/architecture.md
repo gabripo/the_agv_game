@@ -139,19 +139,23 @@ There are two variants of the control function, serving different roles in the s
 
 - **`getCorruptedControl(t)`** — same nominal yaw rate and acceleration, but inside the corridor window it applies a sinusoidal slip bias (`slipMag = 0.020 · sin(progress · π)`) and small random noise to the yaw rate only. The acceleration remains clean. This function is **not** used in the predict step; instead it drives the **wheel encoder measurement** (pre-integrated into `encoderTheta`), creating a discrepancy between the clean prediction and the slip-corrupted encoder reading.
 
-### 3.3 Motion Model (Non-Linear)
+### 3.3 Predict Step
+
+The predict step propagates the state forward using the commanded control and grows the covariance to account for process noise.
+
+#### 3.3.1 Motion Model (Non-Linear)
 
 $$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\\\ y_k + v_k \sin(\theta_k) \Delta t\\\\ \theta_k + \dot{\theta}_k \Delta t\\\\ v_k + a_k \Delta t \end{bmatrix}$$
 
 This is a variable-velocity bicycle model: the steering rate $\dot{\theta}_k$ rotates the heading, the heading determines the direction of the velocity vector $v_k$, and the acceleration $a_k$ changes the speed. Position is advanced by $v_k \Delta t$ along the heading direction. The control comes from `getNominalControl(t)` — the uncorrupted commanded trajectory, free of any corridor slip bias.
 
-### 3.4 Jacobian of Motion Model (4×4)
+#### 3.3.2 Jacobian of Motion Model (4×4)
 
 $$\mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k, \mathbf{u}_k}$$
 
 $$\mathbf{F}_k = \begin{bmatrix} 1 & 0 & -v_k \sin(\theta_k) \Delta t & \cos(\theta_k) \Delta t\\\\ 0 & 1 & v_k \cos(\theta_k) \Delta t & \sin(\theta_k) \Delta t\\\\ 0 & 0 & 1 & 0\\\\ 0 & 0 & 0 & 1 \end{bmatrix}$$
 
-### 3.5 Predict Step
+#### 3.3.3 Predict Equations
 
 $$\mathbf{x}_k^- = f(\mathbf{x}_{k-1}, \mathbf{u}_k)$$
 
@@ -159,9 +163,13 @@ $$\mathbf{F}_k = \frac{\partial f}{\partial \mathbf{x}} \big|_{\mathbf{x}_k^-, \
 
 $$\mathbf{P}_k^- = \mathbf{F}_k \mathbf{P}_{k-1} \mathbf{F}_k^\mathsf{T} + \mathbf{Q}$$
 
-The Jacobian is evaluated at the **predicted** state $\mathbf{x}_k^-$ (after the nonlinear `f()` call), not at the prior $\mathbf{x}_{k-1}$. This matches the code's sequence: `state = f(state, control, dt)` first, then `jacobianF(state)`.
+The Jacobian is evaluated at the **predicted** state $`\mathbf{x}_k^-`$ (after the nonlinear `f()` call), not at the prior $`\mathbf{x}_{k-1}`$. This matches the code's sequence: `state = f(state, control, dt)` first, then `jacobianF(state)`.
 
-### 3.6 Odometry Sensor (Wheel Encoders)
+### 3.4 Measurement Update
+
+The measurement update incorporates sensor readings to correct the predicted state and reduce uncertainty. Each sensor is applied as a **sequential update** — the posterior state and covariance from one sensor feed into the next.
+
+#### 3.4.1 Odometry Sensor (Wheel Encoders)
 
 Wheel encoders measure the rotation of each wheel. From the left and right encoder counts, the robot's forward velocity and yaw rate are derived:
 
@@ -197,11 +205,11 @@ $$\mathbf{H}_{\text{odom}} = \frac{\partial h_{\text{odom}}}{\partial \mathbf{x}
 
 $$\mathbf{R}_{\text{odom}} = \sigma_{\text{odom}}^2 \times \mathbf{I}_2$$
 
-where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. The default baseline is $\mathbf{R}_{\text{odom}} = 0.01\,\mathbf{I}_2$ (before scaling by accuracy). Higher accuracy → lower $\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}$ → stronger trust in the (biased) pre-integrated encoder → more divergence in the corridor.
+where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy slider value. The default baseline is $`\mathbf{R}_{\text{odom}} = 0.01\,\mathbf{I}_2`$ (before scaling by accuracy). Higher accuracy → lower $`\sigma_{\text{odom}}$ → smaller $\mathbf{R}_{\text{odom}}`$ → stronger trust in the (biased) pre-integrated encoder → more divergence in the corridor.
 
 The odometry Jacobian $`\mathbf{H}_{\text{odom}}`$ has the same structure as the IMU Jacobian $`\mathbf{H}_{\text{imu}}`$ because both sensors observe the same state variables ($\theta$ and $v$). They differ only in their noise characteristics ($`\mathbf{R}_{\text{odom}}`$ vs $`\mathbf{R}_{\text{imu}}`$) and availability: odometry is subject to corridor dropout, while the IMU is an interior sensor always available.
 
-### 3.7 IMU Measurement Update (Superimposed on Odometry)
+#### 3.4.2 IMU Measurement Update (Superimposed on Odometry)
 
 The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction. Unlike the wheel encoders, the IMU is an **interior sensor** unaffected by corridor slip — its measurements reflect the true heading and velocity directly:
 
@@ -220,20 +228,19 @@ The IMU update **runs before** the wheel encoder update, while the heading covar
 | $\sigma_{\text{imu}}$ | 1×1 | IMU noise std dev (∝ 1/accuracy) |
 | $\mathbf{R}_{\text{imu}}$ | 2×2 diagonal | IMU measurement noise covariance |
 
-### 3.8 Measurement Model — LIDAR (Range-Bearing)
+#### 3.4.3 Measurement Model — LIDAR (Range-Bearing)
 
 Measurements are taken to the nearest visual landmark:
 
 $$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
 
-### 3.9 Jacobian of Measurement Model (2×4)
+##### 3.4.3.1 Jacobian of LIDAR Measurement Model (2×4)
 
 $$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$$
 
 $$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
 
-
-### 3.10 GPS and Beacon Position Update
+#### 3.4.4 GPS and Beacon Position Update
 
 GPS and beacons both provide direct position observations via `EKF.gpsUpdate()`. The measurement model is a direct observation of the $(x, y)$ position:
 
@@ -245,16 +252,7 @@ $$ \mathbf{R}_{\text{gps}} = \sigma_{\text{gps}}^2 \times \mathbf{I}_2 \qquad \s
 
 Both sensors are **exterior** sensors — they are gated by `!isInCorridor(simTime)` and drop out inside the featureless corridor zone. Beacons reuse the same `gpsUpdate()` method with the beacon's own position and accuracy.
 
-### 3.11 Covariance Matrices
-
-| Matrix | Dimension | Description | Default | Slider Mapping |
-|--------|-----------|-------------|---------|----------------|
-| `Q` | 4×4 diagonal | Process noise (predict step) | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–50 → Q = default × 1/acc |
-| `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–50 → R = default × 1/acc |
-| `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | 0.01 × I₂ | Wheel accuracy 0–50 → R_odom = default / acc |
-| `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
-
-### 3.12 Update Step — Sequential Measurement Updates
+#### 3.4.5 Update Equations
 
 All measurement updates follow the standard Kalman equations:
 
@@ -279,6 +277,15 @@ Rather than stacking all measurements into a single batch, the EKF applies **seq
 **LIDAR, GPS, and beacons** refine position and heading in fixed order. Because each update reduces the relevant covariance entries, later sensors naturally have smaller gains for dimensions already well-observed — but they remain effective for dimensions the earlier sensors cannot see (e.g., GPS corrects $x$, $y$ which IMU and odometry do not touch).
 
 The IMU and odometry use constant Jacobians (linear measurement models), so their H matrices never need recomputation. The LIDAR measurement model is non-linear, so its Jacobian $`\mathbf{H}_k = \partial h / \partial \mathbf{x}`$ is recomputed from the predicted state each time. GPS and beacons also use a constant H (direct position readout).
+
+**Covariance Matrices**
+
+| Matrix | Dimension | Description | Default | Slider Mapping |
+|--------|-----------|-------------|---------|----------------|
+| `Q` | 4×4 diagonal | Process noise (predict step) | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–50 → Q = default × 1/acc |
+| `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–50 → R = default × 1/acc |
+| `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | 0.01 × I₂ | Wheel accuracy 0–50 → R_odom = default / acc |
+| `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
 
 ---
 
