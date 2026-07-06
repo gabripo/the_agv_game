@@ -412,7 +412,7 @@ The order differs between the `completed/crashed` and `!running` states (red fla
 
 | File | Responsibility |
 |------|---------------|
-| `index.html` | DOM structure, CDN script tags, 3-tier accordion with KaTeX, sensor/route/metrics/savings HTML |
+| `index.html` | DOM structure, CDN script tags, 3-tier accordion with KaTeX, sensor/route/metrics HTML |
 | `styles.css` | All styles (~710 lines): layout grid, dashboard cards, accordion, sliders, responsive breakpoints, animations |
 | `script.js` | `EKF` class (including `imuPredict`, `gpsUpdate`), simulation world, p5.js setup/draw, rendering (GPS/IMU indicators), UI/dashboard, sensor/business logic, Node.js exports |
 | `tests/setup.js` | Provides `global.math` from npm `mathjs` package |

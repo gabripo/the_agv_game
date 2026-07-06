@@ -44,7 +44,7 @@
           <details class="accordion-section" id="accExecutive">
             <summary><span class="tier-badge tier-executive">Executive</span> The Business Case for Sensor Fusion
             </summary>
-            <div class="accordion-content">
+            <div class="accordion-content" style="padding: 12px 16px;">
               <p>Imagine walking through a pitch-black warehouse. You count your steps (odometry), but each step
                 introduces
                 drift — after 50 meters, you could be several meters off course. Every time you reach out and touch a
@@ -57,6 +57,54 @@
                 knows where it is — even when the floor is slippery or visual landmarks disappear.</p>
               <p><strong>Business outcome:</strong> Reliable navigation without expensive high-precision sensors. Lower
                 costs, higher uptime, safer operations.</p>
+
+              <h3 style="margin: 16px 0 4px; font-size: 0.85rem;">Hardware Savings Calculator</h3>
+              <div class="metric-row" style="margin-top: 8px;">
+                <span class="metric-label">Sensor Cost Reduction</span>
+                <span class="metric-value good" id="savingsPercent">0%</span>
+              </div>
+              <div class="savings-bar-container">
+                <div class="savings-bar" id="savingsBar" style="width: 0%;"></div>
+              </div>
+              <div class="savings-text" id="savingsNarrative">
+                Savings = EKF performance (0–40% based on position covariance) applied to your selected sensor BOM. Tune
+                the filter well and choose cost-effective sensors to maximize savings.
+              </div>
+              <details style="margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                <summary style="font-weight: 500;">Formula &amp; sensor costs</summary>
+                <div
+                  style="margin-top: 8px; line-height: 1.7; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                  <div style="margin-bottom: 8px;">$$\text{perfFactor} = 0.40 \times \max\!\big(0,\; 1 -
+                    \frac{\sigma}{3.0}\big)$$</div>
+                  <div style="margin-bottom: 8px;">$$\text{BOM} = C_{\text{wheel}} + C_{\text{lidar}} + C_{\text{gps}} +
+                    C_{\text{imu}} + n_{\text{beacon}} \times C_{\text{beacon}}$$</div>
+                  <div style="margin-bottom: 8px;">$$\text{savings} = \text{round}(\text{perfFactor} \times \text{BOM})$$
+                  </div>
+                  <div style="margin-top: 6px;">
+                    Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong>
+                    · imu <strong>$3,000</strong>
+                    · beacon
+                    <strong>$150</strong> ea.
+                  </div>
+                  <div style="margin-top: 4px; color: var(--text-secondary);">
+                    Where $\sigma = \sqrt{\text{tr}(P_{[0:2,0:2]})}$ is the position standard deviation from the EKF
+                    covariance.<br>
+                    Higher EKF accuracy → lower $\sigma$ → higher perfFactor → more savings.<br>
+                    Removing sensors reduces BOM baseline and absolute savings.
+                  </div>
+                </div>
+              </details>
+
+              <h3 style="margin: 16px 0 4px; font-size: 0.85rem;">Business Impact</h3>
+              <div class="savings-text" style="margin-top: 8px;">
+                <p style="margin-bottom: 8px;"><strong>Reduced Deployment Risk:</strong> The "slippery floor" scenario
+                  simulates real-world odometry failure (slick surfaces, uneven terrain). A well-tuned EKF prevents
+                  catastrophic divergence.</p>
+                <p style="margin-bottom: 8px;"><strong>Lower BOM Costs:</strong> With optimal sensor fusion, you can use
+                  lower-spec lidars/cameras while maintaining reliability — reducing per-unit cost by up to 40%.</p>
+                <p><strong>Minimized Downtime:</strong> Real-time state recovery means the AGV handles edge cases without
+                  human intervention, keeping logistics lines running.</p>
+              </div>
             </div>
           </details>
 
@@ -409,68 +457,6 @@
                   to set the featureless zone.
                 </p>
               </div>
-            </div>
-          </div>
-        </details>
-
-        <div class="section-divider"></div>
-
-        <details class="accordion-section">
-          <summary>Hardware Savings Calculator</summary>
-          <div class="accordion-content" style="padding: 12px 16px;">
-            <h2>Hardware Savings Calculator</h2>
-            <div class="metric-row">
-              <span class="metric-label">Sensor Cost Reduction</span>
-              <span class="metric-value good" id="savingsPercent">0%</span>
-            </div>
-            <div class="savings-bar-container">
-              <div class="savings-bar" id="savingsBar" style="width: 0%;"></div>
-            </div>
-            <div class="savings-text" id="savingsNarrative">
-              Savings = EKF performance (0–40% based on position covariance) applied to your selected sensor BOM. Tune
-              the filter well and choose cost-effective sensors to maximize savings.
-            </div>
-            <details style="margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
-              <summary style="font-weight: 500;">Formula &amp; sensor costs</summary>
-              <div
-                style="margin-top: 8px; line-height: 1.7; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
-                <div style="margin-bottom: 8px;">$$\text{perfFactor} = 0.40 \times \max\!\big(0,\; 1 -
-                  \frac{\sigma}{3.0}\big)$$</div>
-                <div style="margin-bottom: 8px;">$$\text{BOM} = C_{\text{wheel}} + C_{\text{lidar}} + C_{\text{gps}} +
-                  C_{\text{imu}} + n_{\text{beacon}} \times C_{\text{beacon}}$$</div>
-                <div style="margin-bottom: 8px;">$$\text{savings} = \text{round}(\text{perfFactor} \times \text{BOM})$$
-                </div>
-                <div style="margin-top: 6px;">
-                  Sensor costs: wheel <strong>$200</strong> · lidar <strong>$5,000</strong> · gps <strong>$800</strong>
-                  · imu <strong>$3,000</strong>
-                  · beacon
-                  <strong>$150</strong> ea.
-                </div>
-                <div style="margin-top: 4px; color: var(--text-secondary);">
-                  Where $\sigma = \sqrt{\text{tr}(P_{[0:2,0:2]})}$ is the position standard deviation from the EKF
-                  covariance.<br>
-                  Higher EKF accuracy → lower $\sigma$ → higher perfFactor → more savings.<br>
-                  Removing sensors reduces BOM baseline and absolute savings.
-                </div>
-              </div>
-            </details>
-          </div>
-        </details>
-
-        <div class="section-divider"></div>
-
-        <details class="accordion-section">
-          <summary>Business Impact</summary>
-          <div class="accordion-content" style="padding: 12px 16px;">
-            <h2>Business Impact</h2>
-            <div class="savings-text">
-              <p style="margin-bottom: 8px;"><strong>Reduced Deployment Risk:</strong> The "slippery floor" scenario
-                simulates real-world odometry failure (slick surfaces, uneven terrain). A well-tuned EKF prevents
-                catastrophic divergence.</p>
-              <p style="margin-bottom: 8px;"><strong>Lower BOM Costs:</strong> With optimal sensor fusion, you can use
-                lower-spec lidars/cameras while maintaining reliability — reducing per-unit cost by up to 40%.</p>
-              <p><strong>Minimized Downtime:</strong> Real-time state recovery means the AGV handles edge cases without
-                human intervention, keeping logistics lines running.</p>
             </div>
           </div>
         </details>
