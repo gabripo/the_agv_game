@@ -11,6 +11,8 @@
 
 ## Overview
 
+<img src="docs/simulation.gif" alt="EKF Tuner simulation with default settings" style="max-width: 100%; border-radius: 8px; margin-bottom: 12px;">
+
 This single-page web application simulates an Automated Guided Vehicle (AGV) navigating through a warehouse with a "featureless corridor" — a zone where visual landmarks disappear and wheel odometry becomes unreliable. The user tunes two EKF covariance matrices (Process Noise `Q` and Measurement Noise `R`) before deployment and observes how their tuning affects the vehicle's ability to navigate the trap.
 
 ### Key Features
