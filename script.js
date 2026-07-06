@@ -1620,9 +1620,12 @@ function resetConfig() {
   divergenceThreshold = 60;
   updateSliderBg(document.getElementById('divergenceThreshold'));
 
-  // Route — reset start/end points and corridor markers
-  startPoint = { x: 80, y: 430 };
-  endPoint = { x: 650, y: 150 };
+  // Route — reset start/end points (unless preserved) and corridor markers
+  const preserve = document.getElementById('preserveRoutePoints')?.checked;
+  if (!preserve) {
+    startPoint = { x: 80, y: 430 };
+    endPoint = { x: 650, y: 150 };
+  }
   userCorridorStart = CORRIDOR_T_START;
   userCorridorEnd = CORRIDOR_T_END;
   slipMode = 'deterministic';
