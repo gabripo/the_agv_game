@@ -94,7 +94,7 @@ p5.js draw()
 
 ---
 
-## 3. EKF Implementation (`script.js:4–134`)
+## 3. EKF Implementation
 
 ### 3.1 State Vector
 
@@ -201,19 +201,7 @@ where $\sigma_{\text{odom}}$ is inversely proportional to the wheel accuracy sli
 
 The odometry Jacobian $`\mathbf{H}_{\text{odom}}`$ has the same structure as the IMU Jacobian $`\mathbf{H}_{\text{imu}}`$ because both sensors observe the same state variables ($\theta$ and $v$). They differ only in their noise characteristics ($`\mathbf{R}_{\text{odom}}`$ vs $`\mathbf{R}_{\text{imu}}`$) and availability: odometry is subject to corridor dropout, while the IMU is an interior sensor always available.
 
-### 3.7 Measurement Model (Range-Bearing)
-
-Measurements are taken to the nearest visual landmark:
-
-$$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
-
-### 3.8 Jacobian of Measurement Model (2×4)
-
-$$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$$
-
-$$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
-
-### 3.9 IMU Measurement Update (Superimposed on Odometry)
+### 3.7 IMU Measurement Update (Superimposed on Odometry)
 
 The IMU provides direct observations of **heading** (via gyroscope) and **forward velocity** (via accelerometer integration), superimposed on the odometry-based prediction. Unlike the wheel encoders, the IMU is an **interior sensor** unaffected by corridor slip — its measurements reflect the true heading and velocity directly:
 
@@ -232,7 +220,32 @@ The IMU update **runs before** the wheel encoder update, while the heading covar
 | $\sigma_{\text{imu}}$ | 1×1 | IMU noise std dev (∝ 1/accuracy) |
 | $\mathbf{R}_{\text{imu}}$ | 2×2 diagonal | IMU measurement noise covariance |
 
-### 3.10 Covariance Matrices
+### 3.8 Measurement Model — LIDAR (Range-Bearing)
+
+Measurements are taken to the nearest visual landmark:
+
+$$\mathbf{z}_k = h(\mathbf{x}_k, l) = \begin{bmatrix} \sqrt{(l_x - x_k)^2 + (l_y - y_k)^2}\\\\ \arctan\dfrac{l_y - y_k}{l_x - x_k} - \theta_k \end{bmatrix} = \begin{bmatrix} \sqrt{\Delta x_k^2 + \Delta y_k^2} = d_k\\\\ \arctan \dfrac{\Delta y}{\Delta x} - \theta_k \end{bmatrix}$$
+
+### 3.9 Jacobian of Measurement Model (2×4)
+
+$$\mathbf{H}_k = \frac{\partial h}{\partial \mathbf{x}} \bigg|_{\mathbf{x}_k^-}$$
+
+$$\mathbf{H}_k = \begin{bmatrix} -\frac{\Delta x_k^-}{d_k^-} & -\frac{\Delta y_k^-}{d_k^-} & 0 & 0\\\\ \frac{\Delta y_k^-}{d_k^{-2}} & -\frac{\Delta x_k^-}{d_k^{-2}} & -1 & 0 \end{bmatrix}$$
+
+
+### 3.10 GPS and Beacon Position Update
+
+GPS and beacons both provide direct position observations via `EKF.gpsUpdate()`. The measurement model is a direct observation of the $(x, y)$ position:
+
+$$ \mathbf{H}_{\text{gps}} = \begin{bmatrix} 1 & 0 & 0 & 0\\\\ 0 & 1 & 0 & 0 \end{bmatrix} $$
+
+$$ \mathbf{z}_{\text{gps}} = \begin{bmatrix} x_{\text{measured}}\\\\ y_{\text{measured}} \end{bmatrix} $$
+
+$$ \mathbf{R}_{\text{gps}} = \sigma_{\text{gps}}^2 \times \mathbf{I}_2 \qquad \sigma_{\text{gps}} = 1 / \text{accuracy} $$
+
+Both sensors are **exterior** sensors — they are gated by `!isInCorridor(simTime)` and drop out inside the featureless corridor zone. Beacons reuse the same `gpsUpdate()` method with the beacon's own position and accuracy.
+
+### 3.11 Covariance Matrices
 
 | Matrix | Dimension | Description | Default | Slider Mapping |
 |--------|-----------|-------------|---------|----------------|
@@ -241,7 +254,7 @@ The IMU update **runs before** the wheel encoder update, while the heading covar
 | `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | 0.01 × I₂ | Wheel accuracy 0–50 → R_odom = default / acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
 
-### 3.11 Update Step
+### 3.12 Update Step
 
 $$\mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} + \mathbf{R} \right)^{-1}$$
 
