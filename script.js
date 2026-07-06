@@ -339,7 +339,9 @@ function buildTrajectory() {
   for (let i = 0; i <= TOTAL_TIME; i++) {
     const t = i / TOTAL_TIME;
     const pt = cubicBezier(p0, p1, p2, p3, t);
-    trajectory.push({ x: pt.x, y: pt.y, theta: 0, v: agvSpeed });
+    // Slow down near the middle of the trajectory (tightest curves)
+    const speedFactor = 0.6 + 0.4 * Math.cos(t * Math.PI);
+    trajectory.push({ x: pt.x, y: pt.y, theta: 0, v: agvSpeed * speedFactor });
   }
 
   for (let i = 0; i < trajectory.length; i++) {
@@ -418,7 +420,7 @@ function getNominalState(t) {
     x: trajectory[idx].x + (trajectory[next].x - trajectory[idx].x) * frac,
     y: trajectory[idx].y + (trajectory[next].y - trajectory[idx].y) * frac,
     theta: trajectory[idx].theta,
-    v: trajectory[idx].v
+    v: trajectory[idx].v + (trajectory[next].v - trajectory[idx].v) * frac
   };
 }
 
@@ -432,7 +434,8 @@ function getNominalControl(t) {
 
   let dTheta = trajectory[nextIdx].theta - trajectory[idx].theta;
   dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
-  return [dTheta / DT, 0];
+  const dv = trajectory[nextIdx].v - trajectory[idx].v;
+  return [dTheta / DT, dv / DT];
 }
 
 function getCorruptedControl(t) {
@@ -442,18 +445,16 @@ function getCorruptedControl(t) {
   let dTheta = trajectory[nextIdx].theta - trajectory[idx].theta;
   dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
   let thetaDot = dTheta / DT;
-  const a = 0;
+  const dv = trajectory[nextIdx].v - trajectory[idx].v;
 
   if (isInCorridor(t)) {
-    // Slip: corrupt steering — robot thinks it's not turning enough
-    // This causes the EKF to predict a straighter path than reality
     const corridorProgress = (t - slipStartTime) / slipDuration;
     const slipMag = 0.020 * Math.sin(corridorProgress * Math.PI);
     thetaDot -= slipMag;
     thetaDot += (Math.random() - 0.5) * 0.002;
   }
 
-  return [thetaDot, a];
+  return [thetaDot, dv / DT];
 }
 
 function getTrueState(t) {

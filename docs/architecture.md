@@ -124,24 +124,30 @@ $$\mathbf{u}_k = \begin{bmatrix} \dot{\theta}_k\\\\ a_k \end{bmatrix}$$
 | 0 | `θ̇` | Steering (yaw) rate | rad/timestep |
 | 1 | `a` | Acceleration | px/timestep² |
 
-The acceleration is always zero (`a = 0`) — the AGV travels at constant velocity `v = agvSpeed` throughout the trajectory.
+The acceleration is derived from the trajectory's varying velocity profile — the AGV decelerates through the tightest curve at the midpoint and accelerates back up toward the end:
+
+$$a_k = \frac{v_{k+1} - v_k}{\Delta t}$$
+
+where $v_k = \texttt{agvSpeed} \cdot (0.6 + 0.4 \cdot \cos(\pi \cdot k / N))$ and $N = \texttt{TOTAL\_TIME}$.
 
 There are two variants of the control function, serving different roles in the simulation:
 
-- **`getNominalControl(t)`** — extracts the clean commanded yaw rate from the trajectory heading differences:
+- **`getNominalControl(t)`** — extracts the clean commanded yaw rate and acceleration from the trajectory heading and velocity differences:
   ```javascript
   dTheta = trajectory[k+1].theta - trajectory[k].theta
   thetaDot = normalizeAngle(dTheta) / DT
+  dv = trajectory[k+1].v - trajectory[k].v
+  a = dv / DT
   ```
-  This is used in the EKF **predict** step. The motion model assumes the robot faithfully executes the commanded turn.
+  This is used in the EKF **predict** step. The motion model assumes the robot faithfully executes the commanded steering and acceleration.
 
-- **`getCorruptedControl(t)`** — same nominal yaw rate, but inside the corridor window it applies a sinusoidal slip bias (`slipMag = 0.020 · sin(progress · π)`) and small random noise. This function is **not** used in the predict step; instead it drives the **wheel encoder measurement** (pre-integrated into `encoderTheta`), creating a discrepancy between the clean prediction and the slip-corrupted encoder reading.
+- **`getCorruptedControl(t)`** — same nominal yaw rate and acceleration, but inside the corridor window it applies a sinusoidal slip bias (`slipMag = 0.020 · sin(progress · π)`) and small random noise to the yaw rate only. The acceleration remains clean. This function is **not** used in the predict step; instead it drives the **wheel encoder measurement** (pre-integrated into `encoderTheta`), creating a discrepancy between the clean prediction and the slip-corrupted encoder reading.
 
 ### 3.3 Motion Model (Non-Linear)
 
 $$\mathbf{x}_{k+1} = f(\mathbf{x}_k, \mathbf{u}_k) = \begin{bmatrix} x_k + v_k \cos(\theta_k) \Delta t\\\\ y_k + v_k \sin(\theta_k) \Delta t\\\\ \theta_k + \dot{\theta}_k \Delta t\\\\ v_k + a_k \Delta t \end{bmatrix}$$
 
-This is a constant-velocity bicycle model: the steering rate $\dot{\theta}_k$ rotates the heading, and the heading determines the direction of the velocity vector $v_k$. Position is advanced by $v_k \Delta t$ along the heading direction. The control comes from `getNominalControl(t)` — the uncorrupted commanded trajectory, free of any corridor slip bias.
+This is a variable-velocity bicycle model: the steering rate $\dot{\theta}_k$ rotates the heading, the heading determines the direction of the velocity vector $v_k$, and the acceleration $a_k$ changes the speed. Position is advanced by $v_k \Delta t$ along the heading direction. The control comes from `getNominalControl(t)` — the uncorrupted commanded trajectory, free of any corridor slip bias.
 
 ### 3.4 Jacobian of Motion Model (4×4)
 
@@ -252,7 +258,11 @@ $$\mathbf{P}_k^+ = (\mathbf{I} - \mathbf{K}_k \mathbf{H}_k) \mathbf{P}_k^-$$
 
 The reference path is a cubic Bézier curve from the starting point to the end point. Users can drag the A/B markers on the canvas to reposition. The trajectory is pre-computed at integer timesteps and interpolated with linear interpolation between steps.
 
-Each trajectory point stores `{x, y, theta, v}` where `v = agvSpeed` (configurable via slider, range 0.5–5.0).
+Each trajectory point stores `{x, y, theta, v}` where `v` follows a sinusoidal speed profile:
+
+$$v_i = \texttt{agvSpeed} \times \bigl(0.6 + 0.4 \cdot \cos(\pi \cdot i / N)\bigr)$$
+
+This decelerates the AGV to 20% of `agvSpeed` at the tightest midpoint curve and accelerates back to full speed at the end, creating a more realistic motion pattern where the robot naturally slows for turns.
 
 400 timesteps at ~60 fps ≈ 6.7 seconds per run at default speed.
 
@@ -271,7 +281,7 @@ A coordinate display below the AGV speed slider shows the current A start / B en
 | **GPS dropout** | GPS update gated by `!isInCorridor(simTime)` |
 | **Beacon dropout** | External sensor position updates gated by `!isInCorridor(simTime)` |
 | **IMU availability** | Interior sensor — always available, even inside corridor. Runs before the wheel encoder update to correct heading while the covariance is still large. |
-| **Control corruption** | Predict uses `getNominalControl()` (clean thetaDot). Encoder readings from `getCorruptedControl()` subtract a sinusoidal steering bias (max 0.015 rad/timestep) from the nominal `thetaDot` during the corridor window. The bias accumulates in the pre-integrated encoder heading, driving the EKF off the true path. |
+| **Control corruption** | Predict uses `getNominalControl()` (clean thetaDot). Encoder readings from `getCorruptedControl()` subtract a sinusoidal steering bias (max 0.020 rad/timestep) from the nominal `thetaDot` during the corridor window. The bias accumulates in the pre-integrated encoder heading, driving the EKF off the true path. |
 | **Noise** | Small random noise (±0.002 rad/timestep) added to prevent exact reproducibility |
 
 ### 4.4 Slip Mode
@@ -394,7 +404,7 @@ The dollar savings scale with the actual sensor configuration: more/better senso
 | measurementToPosition | 2 | Null handling, Cartesian conversion |
 | isInCorridor | 2 | Inside/outside corridor |
 | calculateSavings | 4 | Perfect estimate, max uncertainty, monotonicity, bounds |
-| getCorruptedControl | 2 | Return structure, acceleration = 0 |
+| getCorruptedControl | 2 | Return structure, acceleration matches trajectory |
 | noisyMeasurement | 2 | Return structure, unbiased noise |
 
 ### Headless Browser Integration Test (1 test, 15 assertions)

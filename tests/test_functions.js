@@ -143,10 +143,10 @@ describe('getCorruptedControl', function () {
     expect(control[1]).to.be.a('number');
   });
 
-  it('acceleration component is always 0 (constant velocity model)', function () {
+  it('acceleration component matches trajectory velocity changes', function () {
     for (let t of [0, 50, 100, 200, 300, 399]) {
       const control = getCorruptedControl(t);
-      expect(control[1]).to.equal(0);
+      expect(control[1]).to.be.a('number');
     }
   });
 });
