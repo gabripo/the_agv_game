@@ -1726,8 +1726,13 @@ function updateMagicDisplay() {
   const trueSt = getTrueState(simTime);
   const trueX = math.matrix([[trueSt.x], [trueSt.y], [trueSt.theta], [trueSt.v]]);
 
+  // Control vector
+  const control = getNominalControl(simTime);
+  const u = math.matrix([[control[0]], [control[1]]]);
+
   let html = '<div class="matrix-block">';
   html += '<div class="matrix-cell">' + matrixToLatex(trueX, '\\mathbf{x}^{\\text{true}}_k', 2) + '</div>';
+  html += '<div class="matrix-cell">' + matrixToLatex(u, '\\mathbf{u}_k', 4) + '</div>';
   html += '<div class="matrix-cell">' + matrixToLatex(x, '\\mathbf{x}_k', 2) + '</div>';
   if (xPred) {
     html += '<div class="matrix-cell">' + matrixToLatex(xPred, '\\mathbf{x}_k^-', 2) + '</div>';
@@ -1741,6 +1746,7 @@ function updateMagicDisplay() {
 
   html += '<div style="margin-top: 10px; font-size: 0.72rem; line-height: 1.9; display: grid; grid-template-columns: auto 1fr; gap: 0 12px; color: var(--text-secondary);">';
   html += '<span>$\\mathbf{x}^{\\text{true}}_k$</span><span>True (ground truth) pose</span>';
+  html += '<span>$\\mathbf{u}_k$</span><span>Control input (yaw rate, acceleration)</span>';
   html += '<span>$\\mathbf{x}_k$</span><span>Posterior state estimate (after update)</span>';
   html += '<span>$\\mathbf{x}_k^-$</span><span>Prior state estimate (after predict, before update)</span>';
   html += '<span>$\\mathbf{P}_k$</span><span>State covariance (position block)</span>';
