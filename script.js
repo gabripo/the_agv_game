@@ -1498,13 +1498,9 @@ function updateMetrics() {
   if (crashed) {
     statusTextEl.textContent = 'CRASHED — Tune & Retry';
     statusLedEl.className = 'status-led red';
-    return;
-  }
-
-  if (completed) {
+  } else if (completed) {
     statusTextEl.textContent = '✓ Route Complete';
     statusLedEl.className = 'status-led green';
-    return;
   }
 
   const u = ekf.getPositionUncertainty();
@@ -1529,7 +1525,9 @@ function updateMetrics() {
     `Each unit saves <strong>~$${dollarSavings}</strong> at this tuning level.`;
 
   // Status
-  if (isInCorridor(simTime)) {
+  if (crashed || completed) {
+    // keep the status text already set above
+  } else if (isInCorridor(simTime)) {
     statusTextEl.textContent = '⚠ Corridor — No Landmarks';
     statusLedEl.className = 'status-led yellow';
   } else if (d > 50) {
