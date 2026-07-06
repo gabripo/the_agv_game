@@ -125,7 +125,8 @@
                 \begin{bmatrix} -\frac{\Delta x}{d} & -\frac{\Delta y}{d} & 0 & 0 \\ \frac{\Delta y}{d^2} &
                 -\frac{\Delta
                 x}{d^2} & -1 & 0 \end{bmatrix} $$</div>
-              <p style="font-size: 0.8rem; color: var(--text-secondary);">where $\Delta x = l_x - x$, $\Delta y = l_y - y$, $d = \sqrt{{\Delta x}^2 + {\Delta y}^2}$</p>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">where $\Delta x = l_x - x$, $\Delta y = l_y -
+                y$, $d = \sqrt{{\Delta x}^2 + {\Delta y}^2}$</p>
 
               <p><strong>Kalman Gain &amp; Update Step</strong></p>
               <div class="katex-block">$$ \mathbf{K}_k = \mathbf{P}_k^- \mathbf{H}_k^\mathsf{T} \left( \mathbf{H}_k
@@ -135,15 +136,16 @@
               <div class="katex-block">$$ \mathbf{P}_k^+ = \left( \mathbf{I} - \mathbf{K}_k \mathbf{H}_k \right)
                 \mathbf{P}_k^- $$</div>
 
-              <p><strong>Sensor Noise Models</strong> (accuracy $a_{\text{sensor}} \in [0, 100]$)</p>
+              <p><strong>Sensor Noise Models</strong> (accuracy $a_{\text{sensor}} \in [0, 50]$)</p>
               <div class="katex-block">$$ \sigma_{\text{odom}} = \frac{1}{a_{\text{odom}}}, \qquad
                 \sigma_{\text{lidar}} = \frac{1}{a_{\text{lidar}}}, \qquad
                 \sigma_{\text{gps}} = \frac{1}{a_{\text{gps}}} $$</div>
               <div class="katex-block">$$ \sigma_{\text{imu}} = \frac{1}{a_{\text{imu}}}, \qquad
                 \sigma_{\text{beacon}} = \frac{1}{a_{\text{beacon}}} $$</div>
               <p style="font-size: 0.8rem; color: var(--text-secondary);">
-                Each $a$ is the slider value for that sensor. Higher accuracy &rarr; smaller $\sigma$ &rarr; the filter trusts
-                that sensor more. At $a = 0$ the noise is infinite (sensor ignored); at $a = 100$ the noise is
+                Each $a$ is the slider value for that sensor. Higher accuracy &rarr; smaller $\sigma$ &rarr; the filter
+                trusts
+                that sensor more. At $a = 0$ the noise is infinite (sensor ignored); at $a = 50$ the noise is
                 effectively zero. The beacon accuracy $a_{\text{beacon}}$ is set per-beacon in the list below the LIDAR
                 range slider. Internally the EKF packs these $\sigma$ values into the noise covariance matrices
                 $\mathbf{Q}$ (process) and $\mathbf{R}$ (measurement). The IMU $\sigma_{\text{imu}}$ scales the
@@ -253,19 +255,19 @@
                     <input type="checkbox" id="sensorWheelOdometry" checked>
                     <span>Odometry</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0" max="100" step="0.1"
+                  <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0" max="50" step="0.1"
                     value="1.0"
-                    title="Accuracy a_odom in [0,100]. Process noise sigma_odom ∝ 1/a_odom. Higher -> lower sigma_odom -> filter trusts odometry more.">
+                    title="Accuracy a_odom in [0,50]. Process noise sigma_odom ∝ 1/a_odom. Higher -> lower sigma_odom -> filter trusts odometry more.">
                   <span class="sensor-value" id="wheelOdometryValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="sigma_odom = 1 / a_odom (clamped at a_odom >= 0.01). At a_odom = 0 -> sigma_odom = inf (ignore odometry); at a_odom = 100 -> sigma_odom ≈ 0 (perfect odometry).">ⓘ</span>
+                    title="sigma_odom = 1 / a_odom (clamped at a_odom >= 0.01). At a_odom = 0 -> sigma_odom = inf (ignore odometry); at a_odom = 50 -> sigma_odom ≈ 0 (perfect odometry).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{odom}}$ → $\sigma_{\text{odom}} = 1 / a_{\text{odom}}$.<br>
                   Higher = lower process noise std dev = filter trusts wheel encoders more.<br>
                   At $a_{\text{odom}} = 0$, $\sigma_{\text{odom}}$ is infinite (filter ignores odometry).<br>
                   At
-                  $a_{\text{odom}} = 100$, $\sigma_{\text{odom}} \approx 0$
+                  $a_{\text{odom}} = 50$, $\sigma_{\text{odom}} \approx 0$
                   (near-perfect odometry).
                 </div>
                 <div class="sensor-row" style="margin-top: 2px;">
@@ -273,11 +275,11 @@
                     <input type="checkbox" id="sensorImu">
                     <span>IMU</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="imuAccuracy" min="0" max="100" step="0.1" value="1.0"
-                    title="Accuracy a_imu in [0,100]. IMU noise sigma_imu ∝ 1/a_imu. Higher -> lower sigma_imu -> filter trusts IMU integration more.">
+                  <input type="range" class="sensor-slider" id="imuAccuracy" min="0" max="50" step="0.1" value="1.0"
+                    title="Accuracy a_imu in [0,50]. IMU noise sigma_imu ∝ 1/a_imu. Higher -> lower sigma_imu -> filter trusts IMU integration more.">
                   <span class="sensor-value" id="imuValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="sigma_imu = 1 / a_imu (clamped at a_imu >= 0.01). At a_imu = 0 -> sigma_imu = inf (ignore IMU); at a_imu = 100 -> sigma_imu ≈ 0 (near-perfect IMU).">ⓘ</span>
+                    title="sigma_imu = 1 / a_imu (clamped at a_imu >= 0.01). At a_imu = 0 -> sigma_imu = inf (ignore IMU); at a_imu = 50 -> sigma_imu ≈ 0 (near-perfect IMU).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{imu}}$ → $\sigma_{\text{imu}} = 1 / a_{\text{imu}}$.<br>
@@ -286,7 +288,8 @@
                   on top of the odometry prediction (both contribute simultaneously).<br>
                   Higher $a_{\text{imu}}$ = lower $\sigma_{\text{imu}}$ = filter trusts IMU measurements more.<br>
                   At $a_{\text{imu}} = 0$, $\sigma_{\text{imu}}$ is infinite (filter ignores IMU).<br>
-                  At $a_{\text{imu}} = 100$, $\sigma_{\text{imu}} \approx 0$ (near-perfect heading &amp; velocity readings).
+                  At $a_{\text{imu}} = 50$, $\sigma_{\text{imu}} \approx 0$ (near-perfect heading &amp; velocity
+                  readings).
                 </div>
               </div>
               <div style="margin-top: 12px;">
@@ -296,11 +299,11 @@
                     <input type="checkbox" id="sensorLidar" checked>
                     <span>LIDAR</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="lidarAccuracy" min="0" max="100" step="0.1" value="1.0"
-                    title="Accuracy a_lidar in [0,100]. Measurement noise sigma_lidar ∝ 1/a_lidar. Higher -> lower sigma_lidar -> filter trusts LIDAR more.">
+                  <input type="range" class="sensor-slider" id="lidarAccuracy" min="0" max="50" step="0.1" value="1.0"
+                    title="Accuracy a_lidar in [0,50]. Measurement noise sigma_lidar ∝ 1/a_lidar. Higher -> lower sigma_lidar -> filter trusts LIDAR more.">
                   <span class="sensor-value" id="lidarValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="sigma_lidar = 1 / a_lidar (clamped at a_lidar >= 0.01). At a_lidar = 0 -> sigma_lidar = inf (ignore LIDAR); at a_lidar = 100 -> sigma_lidar ≈ 0 (perfect LIDAR).">ⓘ</span>
+                    title="sigma_lidar = 1 / a_lidar (clamped at a_lidar >= 0.01). At a_lidar = 0 -> sigma_lidar = inf (ignore LIDAR); at a_lidar = 50 -> sigma_lidar ≈ 0 (perfect LIDAR).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{lidar}}$ → $\sigma_{\text{lidar}} = 1 / a_{\text{lidar}}$.<br>
@@ -309,7 +312,7 @@
                   At $a_{\text{lidar}} = 0$,
                   $\sigma_{\text{lidar}}$
                   is infinite (filter ignores LIDAR).<br>
-                  At $a_{\text{lidar}} = 100$, $\sigma_{\text{lidar}} \approx 0$
+                  At $a_{\text{lidar}} = 50$, $\sigma_{\text{lidar}} \approx 0$
                   (near-perfect detections).
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
@@ -329,11 +332,11 @@
                     <input type="checkbox" id="sensorGps">
                     <span>GPS</span>
                   </label>
-                  <input type="range" class="sensor-slider" id="gpsAccuracy" min="0" max="100" step="0.1" value="1.0"
-                    title="Accuracy a_gps in [0,100]. Position noise sigma_gps ∝ 1/a_gps. Higher -> lower sigma_gps -> filter trusts GPS more.">
+                  <input type="range" class="sensor-slider" id="gpsAccuracy" min="0" max="50" step="0.1" value="1.0"
+                    title="Accuracy a_gps in [0,50]. Position noise sigma_gps ∝ 1/a_gps. Higher -> lower sigma_gps -> filter trusts GPS more.">
                   <span class="sensor-value" id="gpsValue">1.00</span>
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
-                    title="sigma_gps = 1 / a_gps (clamped at a_gps >= 0.01). At a_gps = 0 -> sigma_gps = inf (ignore GPS); at a_gps = 100 -> sigma_gps ≈ 0 (perfect fixes).">ⓘ</span>
+                    title="sigma_gps = 1 / a_gps (clamped at a_gps >= 0.01). At a_gps = 0 -> sigma_gps = inf (ignore GPS); at a_gps = 50 -> sigma_gps ≈ 0 (perfect fixes).">ⓘ</span>
                 </div>
                 <div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{gps}}$ → $\sigma_{\text{gps}} = 1 / a_{\text{gps}}$.<br>
@@ -341,7 +344,7 @@
                   std dev = filter trusts GPS more.<br>
                   At $a_{\text{gps}} = 0$, $\sigma_{\text{gps}}$ is infinite
                   (filter ignores GPS)<br>
-                  At $a_{\text{gps}} = 100$, $\sigma_{\text{gps}} \approx 0$
+                  At $a_{\text{gps}} = 50$, $\sigma_{\text{gps}} \approx 0$
                   (near-perfect fixes).
                 </div>
               </div>
@@ -398,14 +401,14 @@
                   style="font-family: monospace;">(tr(P))</span></span>
               <span class="metric-value" id="uncertaintyDisplay">—</span>
             </div>
-    <div class="metric-row">
-      <span class="metric-label">EKF Divergence</span>
-      <span class="metric-value" id="divergenceDisplay">—</span>
-    </div>
-    <button class="btn-magic" id="btnMagic">Show the Magic</button>
-    <div id="matrixDisplay" style="display: none; margin-top: 12px; overflow-x: auto;"></div>
-  </div>
-</details>
+            <div class="metric-row">
+              <span class="metric-label">EKF Divergence</span>
+              <span class="metric-value" id="divergenceDisplay">—</span>
+            </div>
+            <button class="btn-magic" id="btnMagic">Show the Magic</button>
+            <div id="matrixDisplay" style="display: none; margin-top: 12px; overflow-x: auto;"></div>
+          </div>
+        </details>
 
         <div class="section-divider"></div>
 

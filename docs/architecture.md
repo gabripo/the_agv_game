@@ -236,10 +236,10 @@ The IMU update **runs before** the wheel encoder update, while the heading covar
 
 | Matrix | Dimension | Description | Default | Slider Mapping |
 |--------|-----------|-------------|---------|----------------|
-| `Q` | 4×4 diagonal | Process noise (predict step) | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–100 → Q = default × 1/acc |
-| `Q_imu` | 4×4 diagonal | IMU process noise | diag(0.5, 0.5, 0.1, 0.05) | IMU accuracy 0–100 → Q_imu = default × 1/acc |
-| `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–100 → R = default × 1/acc |
-| `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | I₂ | Wheel accuracy 0–100 → R_odom = I₂ / acc |
+| `Q` | 4×4 diagonal | Process noise (predict step) | diag(0.5, 0.5, 0.1, 0.05) | Wheel accuracy 0–50 → Q = default × 1/acc |
+| `Q_imu` | 4×4 diagonal | IMU process noise | diag(0.5, 0.5, 0.1, 0.05) | IMU accuracy 0–50 → Q_imu = default × 1/acc |
+| `R` | 2×2 diagonal | Measurement noise (LIDAR) | diag(0.5, 0.5) | LIDAR accuracy 0–50 → R = default × 1/acc |
+| `R_odom` | 2×2 diagonal | Measurement noise (wheel encoders) | I₂ | Wheel accuracy 0–50 → R_odom = I₂ / acc |
 | `P` | 4×4 symmetric | State covariance (evolves) | 0.1 × I₄ | — |
 
 ### 3.11 Update Step

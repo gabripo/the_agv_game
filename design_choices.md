@@ -35,7 +35,7 @@ A single-page portfolio piece demonstrating deep understanding of Extended Kalma
 *Each sensor has both an enable toggle and an accuracy slider.*
 
 - **Why:** Decouples "do I have this sensor?" from "how good is it?" — users can experiment with having a cheap/bad GPS vs. an expensive/accurate one, or remove a sensor entirely and rely on remaining sensors.
-- The accuracy slider (0–100 range) maps to inverse noise covariance: noise σ ∝ 1/accuracy. At 0, noise → ∞ (sensor ignored); at 100, noise → 0 (perfect measurement). Each slider has a dynamic red→yellow→green background fill proportional to its value.
+- The accuracy slider (0–50 range) maps to inverse noise covariance: noise σ ∝ 1/accuracy. At 0, noise → ∞ (sensor ignored); at 50, noise → 0 (perfect measurement). Each slider has a dynamic red→yellow→green background fill proportional to its value.
 - Tooltips on each slider and an `ⓘ` info button explain the accuracy→covariance mapping in plain language.
 
 ### Reset Configuration Button
@@ -146,7 +146,7 @@ Desktop (≥900px):
 | Mechanic | Implementation |
 |----------|---------------|
 | **Sensor toggles** | Enable/disable odometry, LIDAR, GPS, IMU independently |
-| **Accuracy sliders** | Per-sensor accuracy (0–100) maps to inverse noise covariance (σ ∝ 1/accuracy) |
+| **Accuracy sliders** | Per-sensor accuracy (0–50) maps to inverse noise covariance (σ ∝ 1/accuracy) |
 | **Dynamic slider backgrounds** | Red→yellow→green gradient fill proportional to slider value |
 | **Reset Configuration** | One-click restore of all defaults |
 | **Coordinate display** | Live A/B route point readout below speed slider |

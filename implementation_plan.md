@@ -150,7 +150,7 @@ function draw() {
 - Exterior: LIDAR (on by default), GPS (off by default), Beacons (5 default)
 - Each sensor has:
   - Enable/disable toggle
-  - Accuracy slider (0–100, default 1.0) — maps to inverse noise covariance (σ ∝ 1/accuracy)
+  - Accuracy slider (0–50, default 1.0) — maps to inverse noise covariance (σ ∝ 1/accuracy)
   - Dynamic red→yellow→green gradient background fill proportional to value
   - Tooltip and `ⓘ` info button explaining the accuracy→covariance mapping
 - LIDAR also has a range slider (100–600px, default 400)
