@@ -23,10 +23,16 @@
   <div id="app">
     <header>
       <h1>⚡ The EKF Tuner</h1>
-      <p>Navigating Uncertainty — A portfolio demonstration of sensor fusion &amp; state estimation</p>
+      <p class="lede">Can you get a warehouse robot across a slippery corridor where its sensors go blind?</p>
+      <p class="sublede">An interactive demo of sensor fusion (Extended Kalman Filter) &mdash; no math needed to play.</p>
       <p style="margin-top: 2px; font-size: 0.8rem;"><a href="https://github.com/gabripo/the_agv_game" target="_blank" style="color: var(--accent);">View on GitHub</a></p>
     </header>
 
+    <ol class="how-to-play" aria-label="How to play">
+      <li><span class="step">1</span><span><strong>Pick the robot's sensors</strong> in the control panel, under <em>Sensors Configuration</em>. Better sensors cost more.</span></li>
+      <li><span class="step">2</span><span><strong>Press Run</strong> and watch the robot drive from <strong class="c-start">A</strong> to <strong class="c-end">B</strong> through the slippery corridor.</span></li>
+      <li><span class="step">3</span><span><strong>Win</strong> if it reaches B without hitting the shelves. The calculator shows how much hardware money your setup saves.</span></li>
+    </ol>
     <div class="main-grid">
       <!-- ===== LEFT: CANVAS ===== -->
       <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -34,6 +40,12 @@
           <div id="p5canvas"></div>
           <div class="overlay-flash" id="flashRed" style="background: var(--danger);"></div>
         </div>
+        <ul class="map-legend" aria-label="Map legend">
+          <li><span class="swatch sw-true"></span>Where the robot <strong>really</strong> is</li>
+          <li><span class="swatch sw-ekf"></span>Where the robot <strong>thinks</strong> it is</li>
+          <li><span class="swatch sw-meas"></span>Raw sensor readings</li>
+          <li><span class="swatch sw-slip"></span>Slippery corridor: landmarks and GPS drop out</li>
+        </ul>
 
         <div class="card" id="resultPanel" style="display: none; text-align: center; padding: 24px;">
           <div id="resultContent"></div>
@@ -42,8 +54,8 @@
         <div style="margin-top: 4px;">
 
           <!-- EXECUTIVE -->
-          <details class="accordion-section" id="accExecutive">
-            <summary><span class="tier-badge tier-executive">Executive</span> The Business Case for Sensor Fusion
+          <details class="accordion-section" id="accExecutive" open>
+            <summary><span class="tier-badge tier-executive">In plain words</span> Why this matters
             </summary>
             <div class="accordion-content" style="padding: 12px 16px;">
               <p>Imagine walking through a pitch-black warehouse. You count your steps (odometry), but each step
@@ -59,6 +71,16 @@
               <p><strong>Business outcome:</strong> Reliable navigation without expensive high-precision sensors. Lower
                 costs, higher uptime, safer operations.</p>
 
+              <h3 style="margin: 16px 0 4px; font-size: 0.85rem;">Jargon buster</h3>
+              <dl class="jargon">
+                <dt>AGV</dt><dd>Automated Guided Vehicle: a robot that moves goods around a warehouse.</dd>
+                <dt>EKF</dt><dd>Extended Kalman Filter: the "brain" that blends all sensor readings into one best guess of the robot's position.</dd>
+                <dt>Odometry</dt><dd>Counting wheel turns. Cheap, but it drifts, and fails on slippery floors.</dd>
+                <dt>IMU</dt><dd>A motion sensor (like the one in your phone) that feels turns and acceleration.</dd>
+                <dt>LIDAR</dt><dd>A laser scanner that measures the distance to landmarks and beacons.</dd>
+                <dt>Beacon</dt><dd>A cheap marker you place on the map so LIDAR has something to measure against.</dd>
+                <dt>GPS</dt><dd>Satellite positioning. Rough indoors, and it drops out in the corridor.</dd>
+              </dl>
               <h3 style="margin: 16px 0 4px; font-size: 0.85rem;">Hardware Savings Calculator</h3>
               <div class="metric-row" style="margin-top: 8px;">
                 <span class="metric-label">Sensor Cost Reduction</span>
@@ -111,7 +133,7 @@
 
           <!-- ENGINEER -->
           <details class="accordion-section" id="accEngineer">
-            <summary><span class="tier-badge tier-engineer">Engineer</span> The Predict-Update Loop &amp; Covariance
+            <summary><span class="tier-badge tier-engineer">For engineers</span> The Predict-Update Loop &amp; Covariance
               Tuning
             </summary>
             <div class="accordion-content">
@@ -137,7 +159,7 @@
 
           <!-- SPECIALIST -->
           <details class="accordion-section" id="accSpecialist">
-            <summary><span class="tier-badge tier-specialist">Specialist</span> EKF Mathematics &amp; Jacobian
+            <summary><span class="tier-badge tier-specialist">The math</span> EKF Mathematics &amp; Jacobian
               Linearization
             </summary>
             <div class="accordion-content">
@@ -279,14 +301,14 @@
           <div class="sensor-row" style="margin: 8px 0 12px;">
             <label class="sensor-toggle">
               <input type="checkbox" id="allowDivergence" checked>
-              <span>Stop on divergence</span>
+              <span>Stop when the robot is lost</span>
             </label>
             <span id="divergenceSliderGroup" style="display: flex; flex: 1; align-items: center; gap: 8px;">
               <input type="range" class="sensor-slider" id="divergenceThreshold" min="0" max="200" step="1" value="60"
                 title="Divergence threshold in pixels. 0 = always stop, 200 = effectively disabled (larger than the canvas).">
               <span class="sensor-value" id="divergenceThresholdValue">60</span>
               <span style="cursor: help; font-size: 0.75rem; color: var(--text-secondary);"
-                title="If the EKF estimate strays more than this many pixels from the true AGV position, the simulation stops.">px</span>
+                title="If the robot's guess strays more than this many pixels from where it really is, the run stops.">px</span>
             </span>
           </div>
 
@@ -338,7 +360,7 @@
                 <div class="sensor-row">
                   <label class="sensor-toggle">
                     <input type="checkbox" id="sensorWheelOdometry" checked>
-                    <span>Odometry</span>
+                    <span>Odometry</span><small class="plain-hint">Counts wheel turns. Cheap, but slips on wet floors.</small>
                   </label>
                   <input type="range" class="sensor-slider" id="wheelOdometryAccuracy" min="0" max="50" step="0.1"
                     value="1.0"
@@ -347,18 +369,18 @@
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
                     title="sigma_odom = 1 / a_odom (clamped at a_odom >= 0.01). At a_odom = 0 -> sigma_odom = inf (ignore odometry); at a_odom = 50 -> sigma_odom ≈ 0 (perfect odometry).">ⓘ</span>
                 </div>
-                <div class="slider-hint" style="padding: 0 8px 4px;">
+                <details class="math-hint"><summary>Show the math</summary><div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{odom}}$ → $\sigma_{\text{odom}} = 1 / a_{\text{odom}}$.<br>
                   Higher = lower process noise std dev = filter trusts wheel encoders more.<br>
                   At $a_{\text{odom}} = 0$, $\sigma_{\text{odom}}$ is infinite (filter ignores odometry).<br>
                   At
                   $a_{\text{odom}} = 50$, $\sigma_{\text{odom}} \approx 0$
                   (near-perfect odometry).
-                </div>
+                </div></details>
                 <div class="sensor-row" style="margin-top: 2px;">
                   <label class="sensor-toggle">
                     <input type="checkbox" id="sensorImu">
-                    <span>IMU</span>
+                    <span>IMU</span><small class="plain-hint">Feels turns and acceleration, like a phone's motion sensor.</small>
                   </label>
                   <input type="range" class="sensor-slider" id="imuAccuracy" min="0" max="50" step="0.1" value="1.0"
                     title="Accuracy a_imu in [0,50]. IMU noise sigma_imu ∝ 1/a_imu. Higher -> lower sigma_imu -> filter trusts IMU integration more.">
@@ -366,7 +388,7 @@
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
                     title="sigma_imu = 1 / a_imu (clamped at a_imu >= 0.01). At a_imu = 0 -> sigma_imu = inf (ignore IMU); at a_imu = 50 -> sigma_imu ≈ 0 (near-perfect IMU).">ⓘ</span>
                 </div>
-                <div class="slider-hint" style="padding: 0 8px 4px;">
+                <details class="math-hint"><summary>Show the math</summary><div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{imu}}$ → $\sigma_{\text{imu}} = 1 / a_{\text{imu}}$.<br>
                   IMU measures heading ($\theta$) via gyroscope and velocity ($v$) via accelerometer,<br>
                   with noise $\propto \sigma_{\text{imu}}$. These are superimposed as a measurement update<br>
@@ -375,14 +397,14 @@
                   At $a_{\text{imu}} = 0$, $\sigma_{\text{imu}}$ is infinite (filter ignores IMU).<br>
                   At $a_{\text{imu}} = 50$, $\sigma_{\text{imu}} \approx 0$ (near-perfect heading &amp; velocity
                   readings).
-                </div>
+                </div></details>
               </div>
               <div style="margin-top: 12px;">
                 <h2>Exterior Sensors</h2>
                 <div class="sensor-row">
                   <label class="sensor-toggle">
                     <input type="checkbox" id="sensorLidar" checked>
-                    <span>LIDAR</span>
+                    <span>LIDAR</span><small class="plain-hint">Laser scanner that measures distances to beacons.</small>
                   </label>
                   <input type="range" class="sensor-slider" id="lidarAccuracy" min="0" max="50" step="0.1" value="1.0"
                     title="Accuracy a_lidar in [0,50]. Measurement noise sigma_lidar ∝ 1/a_lidar. Higher -> lower sigma_lidar -> filter trusts LIDAR more.">
@@ -390,7 +412,7 @@
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
                     title="sigma_lidar = 1 / a_lidar (clamped at a_lidar >= 0.01). At a_lidar = 0 -> sigma_lidar = inf (ignore LIDAR); at a_lidar = 50 -> sigma_lidar ≈ 0 (perfect LIDAR).">ⓘ</span>
                 </div>
-                <div class="slider-hint" style="padding: 0 8px 4px;">
+                <details class="math-hint"><summary>Show the math</summary><div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{lidar}}$ → $\sigma_{\text{lidar}} = 1 / a_{\text{lidar}}$.<br>
                   Higher = lower
                   measurement noise std dev = filter trusts LIDAR more.<br>
@@ -399,7 +421,7 @@
                   is infinite (filter ignores LIDAR).<br>
                   At $a_{\text{lidar}} = 50$, $\sigma_{\text{lidar}} \approx 0$
                   (near-perfect detections).
-                </div>
+                </div></details>
                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
                   <span style="font-size: 0.75rem; color: var(--text-secondary); min-width: 72px;">Range</span>
                   <input type="range" class="sensor-slider" id="lidarRange" min="100" max="600" step="10" value="400">
@@ -415,7 +437,7 @@
                 <div class="sensor-row" style="margin-top: 8px;">
                   <label class="sensor-toggle">
                     <input type="checkbox" id="sensorGps">
-                    <span>GPS</span>
+                    <span>GPS</span><small class="plain-hint">Satellite position: rough, and blind in the corridor.</small>
                   </label>
                   <input type="range" class="sensor-slider" id="gpsAccuracy" min="0" max="50" step="0.1" value="1.0"
                     title="Accuracy a_gps in [0,50]. Position noise sigma_gps ∝ 1/a_gps. Higher -> lower sigma_gps -> filter trusts GPS more.">
@@ -423,7 +445,7 @@
                   <span style="cursor: help; font-size: 0.8rem; color: var(--text-secondary);"
                     title="sigma_gps = 1 / a_gps (clamped at a_gps >= 0.01). At a_gps = 0 -> sigma_gps = inf (ignore GPS); at a_gps = 50 -> sigma_gps ≈ 0 (perfect fixes).">ⓘ</span>
                 </div>
-                <div class="slider-hint" style="padding: 0 8px 4px;">
+                <details class="math-hint"><summary>Show the math</summary><div class="slider-hint" style="padding: 0 8px 4px;">
                   Accuracy $a_{\text{gps}}$ → $\sigma_{\text{gps}} = 1 / a_{\text{gps}}$.<br>
                   Higher = lower position
                   std dev = filter trusts GPS more.<br>
@@ -431,7 +453,7 @@
                   (filter ignores GPS)<br>
                   At $a_{\text{gps}} = 50$, $\sigma_{\text{gps}} \approx 0$
                   (near-perfect fixes).
-                </div>
+                </div></details>
               </div>
             </div>
         </div>

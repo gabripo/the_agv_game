@@ -24,7 +24,8 @@ This single-page web application simulates an Automated Guided Vehicle (AGV) nav
 - **Hardware Savings Calculator** — Computes BOM savings based on EKF position covariance and the actual sensor configuration (savings = EKF quality × sensor BOM cost). BOM includes wheel ($200), lidar ($5,000), gps ($800), imu ($3,000), and beacons ($150 ea.)
 - **AGV Speed Control** — Slider to adjust traversal speed; higher speed makes the corridor harder to navigate
 - **Stop on Divergence** — Toggle to enable/disable the 60px divergence threshold stop
-- **Three-Tier Explanatory Accordion** — Executive (business analogy), Engineer (predict-update loop), Specialist (full EKF math with KaTeX-rendered equations and symbol legend spoiler) — displayed below the map
+- **Plain-language onboarding** — a one-line goal, a 3-step "How to play" strip, a map legend (where the robot really is vs. where it thinks it is), plain-language sensor descriptions and end-of-run tips; the math stays one click away
+- **Three-Tier Explanatory Accordion** — In plain words (business analogy and jargon buster, open by default), For engineers (predict-update loop), The math (full EKF math with KaTeX-rendered equations and symbol legend spoiler) — displayed below the map
 - **Reset Configuration** — One-click restore of all defaults (sensor toggles, accuracy sliders, route points, speed, corridor mode)
 - **Coordinate Display** — Live A (start) / B (end) coordinate readout below the AGV speed slider
 - **GPS & IMU Indicators** — Green dots and labels above the EKF estimate on canvas when GPS or IMU are active
