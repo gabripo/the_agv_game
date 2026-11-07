@@ -1366,7 +1366,7 @@ function drawIdlePrompt() {
   textAlign(CENTER, CENTER);
   textSize(16);
   textFont('sans-serif');
-  text('Tune the sliders →\nthen press RUN SIMULATION', width / 2, height / 2);
+  text('Pick sensors in the control panel,\nthen press RUN SIMULATION', width / 2, height / 2);
   textFont('sans-serif');
 }
 
@@ -1418,12 +1418,16 @@ function gameOver(reason) {
   const content = document.getElementById('resultContent');
   if (reason === 'collision') {
     content.innerHTML =
-      '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ COLLISION DETECTED</h2>' +
-      '<p style="color: var(--text-secondary);">The EKF estimate drifted into warehouse racking. Try increasing Q (trust odometry less) or reducing R (trust sensors more).</p>';
+      '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ Crashed into a shelf</h2>' +
+      '<p style="color: var(--text-secondary);">On the slippery floor the wheels spun, and the robot kept trusting them. Its guess of where it was drifted into the racking.</p>' +
+      '<p style="color: var(--text-secondary); margin-top: 6px;"><strong>Try:</strong> lower the Odometry accuracy, raise LIDAR accuracy, or add a few beacons along the corridor.</p>' +
+      '<p style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 6px;">Engineer\'s view: increase Q (trust odometry less) or reduce R (trust sensors more).</p>';
   } else {
     content.innerHTML =
-      '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ ESTIMATE DIVERGED</h2>' +
-      '<p style="color: var(--text-secondary);">The estimated state diverged from the true position. Review your Q/R tuning.</p>';
+      '<h2 style="color: var(--danger); margin-bottom: 8px;">✗ The robot got lost</h2>' +
+      '<p style="color: var(--text-secondary);">Its guess drifted too far from where it really was, so the run was stopped before it could hit anything.</p>' +
+      '<p style="color: var(--text-secondary); margin-top: 6px;"><strong>Try:</strong> give it a sensor that still works in the corridor (LIDAR with beacons), or trust the wheels less.</p>' +
+      '<p style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 6px;">Engineer\'s view: the estimate diverged; review your Q/R tuning.</p>';
   }
   panel.style.display = 'block';
   updateMetrics();
@@ -1440,8 +1444,9 @@ function routeComplete() {
   const panel = document.getElementById('resultPanel');
   const content = document.getElementById('resultContent');
   content.innerHTML =
-    '<h2 style="color: var(--success); margin-bottom: 8px;">✓ ROUTE COMPLETE</h2>' +
-    '<p style="color: var(--text-secondary);">' +
+    '<h2 style="color: var(--success); margin-bottom: 8px;">✓ Delivered! The robot reached B</h2>' +
+    '<p style="color: var(--text-secondary);">Your sensor setup kept the robot on track through the slippery corridor. Can you do it with cheaper sensors?</p>' +
+    '<p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 6px;">' +
     `Max divergence: ${(maxDivergence).toFixed(1)}px  ·  ` +
     `Sensor savings: ${(currentSavings * 100).toFixed(0)}%  ·  ` +
     `Final uncertainty: ${currentUncertainty.toFixed(3)}` +
