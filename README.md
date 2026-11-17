@@ -15,7 +15,7 @@
 
 This single-page web application simulates an Automated Guided Vehicle (AGV) navigating through a warehouse with a "featureless corridor" — a zone where visual landmarks disappear and wheel odometry becomes unreliable. The user tunes two EKF covariance matrices (Process Noise `Q` and Measurement Noise `R`) before deployment and observes how their tuning affects the vehicle's ability to navigate the trap.
 
-Want technical explanation with many formulae like for the EKF implementation? Check it here (human reviewed): [architecture.md](https://github.com/gabripo/the_agv_game/blob/a9d04926f57e8ad0ca43d9407d035b81dd28bfc9/docs/architecture.md)
+Want technical explanation with many formulae like for the EKF implementation? Check it here (human reviewed) [architecture.md](https://github.com/gabripo/the_agv_game/blob/a9d04926f57e8ad0ca43d9407d035b81dd28bfc9/docs/architecture.md) and in the "The Math" section of the Live Demo [https://gabripo.github.io/the_agv_game](https://gabripo.github.io/the_agv_game) .
 
 ### Key Features
 
